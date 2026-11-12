@@ -1,0 +1,873 @@
+{
+ "STAND": "2026-11-12T14:50:00+01:00",
+ "SPIELE": [
+  {
+   "id": "n1",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-12T17:00:00Z",
+   "h": "Seattle Kraken",
+   "a": "Carolina Hurricanes",
+   "p": {
+    "h": 27.1,
+    "a": 72.9
+   }
+  },
+  {
+   "id": "n2",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T00:00:00Z",
+   "h": "Boston Bruins",
+   "a": "Montreal Canadiens",
+   "p": {
+    "h": 52.8,
+    "a": 47.2
+   }
+  },
+  {
+   "id": "n3",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T00:00:00Z",
+   "h": "Toronto Maple Leafs",
+   "a": "Minnesota Wild",
+   "p": {
+    "h": 39.9,
+    "a": 60.1
+   }
+  },
+  {
+   "id": "n4",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T00:00:00Z",
+   "h": "New Jersey Devils",
+   "a": "Washington Capitals",
+   "p": {
+    "h": 57.4,
+    "a": 42.6
+   }
+  },
+  {
+   "id": "n5",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T00:00:00Z",
+   "h": "Columbus Blue Jackets",
+   "a": "Tampa Bay Lightning",
+   "p": {
+    "h": 49.1,
+    "a": 50.9
+   }
+  },
+  {
+   "id": "n6",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T00:00:00Z",
+   "h": "Ottawa Senators",
+   "a": "Colorado Avalanche",
+   "p": {
+    "h": 48.7,
+    "a": 51.3
+   }
+  },
+  {
+   "id": "n7",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T00:30:00Z",
+   "h": "Florida Panthers",
+   "a": "Detroit Red Wings",
+   "p": {
+    "h": 60.3,
+    "a": 39.7
+   }
+  },
+  {
+   "id": "n8",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T01:00:00Z",
+   "h": "Dallas Stars",
+   "a": "Winnipeg Jets",
+   "p": {
+    "h": 61,
+    "a": 39
+   }
+  },
+  {
+   "id": "n9",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T01:00:00Z",
+   "h": "Chicago Blackhawks",
+   "a": "Buffalo Sabres",
+   "p": {
+    "h": 41.7,
+    "a": 58.3
+   }
+  },
+  {
+   "id": "n10",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T02:00:00Z",
+   "h": "Utah Mammoth",
+   "a": "St. Louis Blues",
+   "p": {
+    "h": 52,
+    "a": 48
+   }
+  },
+  {
+   "id": "b1",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-20T19:30:00Z",
+   "h": "Bayern München",
+   "a": "1. FC Köln",
+   "p": {
+    "h": 88.9,
+    "u": 7.3,
+    "a": 3.8
+   }
+  },
+  {
+   "id": "b2",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-21T14:30:00Z",
+   "h": "Bayer Leverkusen",
+   "a": "SC Paderborn",
+   "p": {
+    "h": 76.4,
+    "u": 13.7,
+    "a": 9.9
+   }
+  },
+  {
+   "id": "b3",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-21T14:30:00Z",
+   "h": "Eintracht Frankfurt",
+   "a": "TSG Hoffenheim",
+   "p": {
+    "h": 39.9,
+    "u": 24,
+    "a": 36.1
+   }
+  },
+  {
+   "id": "b4",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-21T14:30:00Z",
+   "h": "Union Berlin",
+   "a": "RB Leipzig",
+   "p": {
+    "h": 18,
+    "u": 20.5,
+    "a": 61.5
+   }
+  },
+  {
+   "id": "b5",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-21T14:30:00Z",
+   "h": "Gladbach",
+   "a": "Borussia Dortmund",
+   "p": {
+    "h": 19.7,
+    "u": 21.2,
+    "a": 59.1
+   }
+  },
+  {
+   "id": "b6",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-21T14:30:00Z",
+   "h": "SV Elversberg",
+   "a": "SC Freiburg",
+   "p": {
+    "h": 28.8,
+    "u": 25.1,
+    "a": 46.1
+   }
+  },
+  {
+   "id": "b7",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-21T17:30:00Z",
+   "h": "Schalke 04",
+   "a": "VfB Stuttgart",
+   "p": {
+    "h": 24.5,
+    "u": 23.2,
+    "a": 52.3
+   }
+  },
+  {
+   "id": "b8",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-22T14:30:00Z",
+   "h": "FC Augsburg",
+   "a": "FSV Mainz",
+   "p": {
+    "h": 35.3,
+    "u": 24.6,
+    "a": 40.1
+   }
+  },
+  {
+   "id": "b9",
+   "sport": "fussball",
+   "liga": "Bundesliga",
+   "zeit": "2026-11-22T16:30:00Z",
+   "h": "Werder Bremen",
+   "a": "Hamburger SV",
+   "p": {
+    "h": 56.9,
+    "u": 22.3,
+    "a": 20.8
+   }
+  },
+  {
+   "id": "e1",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T12:30:00Z",
+   "h": "Manchester City",
+   "a": "Fulham",
+   "p": {
+    "h": 68,
+    "u": 18.1,
+    "a": 13.9
+   }
+  },
+  {
+   "id": "e2",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T15:00:00Z",
+   "h": "Aston Villa",
+   "a": "Sunderland",
+   "p": {
+    "h": 54.5,
+    "u": 24.6,
+    "a": 20.9
+   }
+  },
+  {
+   "id": "e3",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T15:00:00Z",
+   "h": "Bournemouth",
+   "a": "Nottingham Forest",
+   "p": {
+    "h": 46.8,
+    "u": 26.7,
+    "a": 26.5
+   }
+  },
+  {
+   "id": "e4",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T15:00:00Z",
+   "h": "Chelsea",
+   "a": "Leeds United",
+   "p": {
+    "h": 50.9,
+    "u": 25.2,
+    "a": 23.9
+   }
+  },
+  {
+   "id": "e5",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T15:00:00Z",
+   "h": "Coventry City",
+   "a": "Crystal Palace",
+   "p": {
+    "h": 40.4,
+    "u": 26.3,
+    "a": 33.3
+   }
+  },
+  {
+   "id": "e6",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T15:00:00Z",
+   "h": "Tottenham",
+   "a": "Ipswich Town",
+   "p": {
+    "h": 62.1,
+    "u": 21.1,
+    "a": 16.8
+   }
+  },
+  {
+   "id": "e7",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-21T17:30:00Z",
+   "h": "Newcastle",
+   "a": "Arsenal",
+   "p": {
+    "h": 16.9,
+    "u": 22.1,
+    "a": 61
+   }
+  },
+  {
+   "id": "e8",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-22T14:00:00Z",
+   "h": "Hull City",
+   "a": "Brighton",
+   "p": {
+    "h": 15.8,
+    "u": 20.6,
+    "a": 63.6
+   }
+  },
+  {
+   "id": "e9",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-22T16:30:00Z",
+   "h": "Liverpool",
+   "a": "Manchester United",
+   "p": {
+    "h": 56,
+    "u": 22.4,
+    "a": 21.6
+   }
+  },
+  {
+   "id": "e10",
+   "sport": "fussball",
+   "liga": "Premier League",
+   "zeit": "2026-11-23T20:00:00Z",
+   "h": "Brentford",
+   "a": "Everton",
+   "p": {
+    "h": 46.1,
+    "u": 26.2,
+    "a": 27.7
+   }
+  },
+  {
+   "id": "c1",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T17:45:00Z",
+   "h": "Bodø/Glimt",
+   "a": "LASK Linz",
+   "p": {
+    "h": 63,
+    "u": 18.6,
+    "a": 18.4
+   }
+  },
+  {
+   "id": "c2",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T17:45:00Z",
+   "h": "Galatasaray",
+   "a": "Aston Villa",
+   "p": {
+    "h": 36.4,
+    "u": 24.2,
+    "a": 39.4
+   }
+  },
+  {
+   "id": "c3",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "Arsenal",
+   "a": "Borussia Dortmund",
+   "p": {
+    "h": 69,
+    "u": 18.5,
+    "a": 12.5
+   }
+  },
+  {
+   "id": "c4",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "Como 1907",
+   "a": "AEK Athen",
+   "p": {
+    "h": 73.2,
+    "u": 15.5,
+    "a": 11.3
+   }
+  },
+  {
+   "id": "c5",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "Feyenoord",
+   "a": "FC Porto",
+   "p": {
+    "h": 33.6,
+    "u": 25.3,
+    "a": 41.1
+   }
+  },
+  {
+   "id": "c6",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "Manchester City",
+   "a": "SSC Napoli",
+   "p": {
+    "h": 77.6,
+    "u": 13.4,
+    "a": 9
+   }
+  },
+  {
+   "id": "c7",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "RB Leipzig",
+   "a": "RC Lens",
+   "p": {
+    "h": 68.3,
+    "u": 16.8,
+    "a": 14.9
+   }
+  },
+  {
+   "id": "c8",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "Real Madrid",
+   "a": "PSV Eindhoven",
+   "p": {
+    "h": 81.5,
+    "u": 10.7,
+    "a": 7.8
+   }
+  },
+  {
+   "id": "c9",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-24T20:00:00Z",
+   "h": "Slovan Bratislava",
+   "a": "Real Betis",
+   "p": {
+    "h": 10.3,
+    "u": 14.8,
+    "a": 74.9
+   }
+  },
+  {
+   "id": "c10",
+   "sport": "fussball",
+   "liga": "Champions League",
+   "zeit": "2026-11-25T17:45:00Z",
+   "h": "Sabah",
+   "a": "FC Barcelona",
+   "p": {
+    "h": 4.4,
+    "u": 6.6,
+    "a": 89
+   }
+  }
+ ],
+ "TOPS": [
+  {
+   "id": "n1",
+   "wahl": "a",
+   "text": "Heute Abend. Carolina ist klarer Favorit, die Daten geben Seattle nur gut jede vierte Chance."
+  },
+  {
+   "id": "b1",
+   "wahl": "h",
+   "text": "Bayern hat zuletzt in Mainz 2:1 gewonnen, Köln verlor zuhause 1:2 gegen Leverkusen. Der sicherste Tipp im Fussball-Angebot."
+  },
+  {
+   "id": "c8",
+   "wahl": "h",
+   "text": "Real gewann zuletzt in Athen 3:2, PSV verlor in der Champions League zuhause gegen Brügge."
+  },
+  {
+   "id": "c10",
+   "wahl": "a",
+   "text": "Barcelona ist in Sabah haushoher Favorit. Nur: Bei so klaren Spielen ist die Quote meist sehr tief."
+  },
+  {
+   "id": "b2",
+   "wahl": "h",
+   "text": "Leverkusen hat zuletzt das Derby in Köln gewonnen. Paderborn holte aber gegen Frankfurt ein 2:2, also nicht unterschätzen."
+  },
+  {
+   "id": "c6",
+   "wahl": "h",
+   "text": "City gewann in der Champions League 3:2 in Leipzig, verlor aber in der Liga 1:3 in Nottingham. Favorit, aber kein Selbstläufer."
+  }
+ ],
+ "RESULTATE": [
+  {
+   "d": "2026-11-01",
+   "h": "Eintracht Frankfurt",
+   "a": "Hamburger SV",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-06",
+   "h": "Hamburger SV",
+   "a": "Gladbach",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Borussia Dortmund",
+   "a": "SV Elversberg",
+   "hs": 2,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "RB Leipzig",
+   "a": "FC Augsburg",
+   "hs": 5,
+   "as": 2
+  },
+  {
+   "d": "2026-11-07",
+   "h": "FSV Mainz",
+   "a": "Bayern München",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-07",
+   "h": "SC Paderborn",
+   "a": "Eintracht Frankfurt",
+   "hs": 2,
+   "as": 2
+  },
+  {
+   "d": "2026-11-07",
+   "h": "VfB Stuttgart",
+   "a": "Werder Bremen",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "1. FC Köln",
+   "a": "Bayer Leverkusen",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-08",
+   "h": "SC Freiburg",
+   "a": "Union Berlin",
+   "hs": 2,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "TSG Hoffenheim",
+   "a": "Schalke 04",
+   "hs": 2,
+   "as": 1
+  },
+  {
+   "d": "2026-11-06",
+   "h": "Everton",
+   "a": "Coventry City",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Leeds United",
+   "a": "Tottenham",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Arsenal",
+   "a": "Hull City",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Fulham",
+   "a": "Newcastle",
+   "hs": 1,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Nottingham Forest",
+   "a": "Manchester City",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Brighton",
+   "a": "Brentford",
+   "hs": 2,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Crystal Palace",
+   "a": "Liverpool",
+   "hs": 1,
+   "as": 3
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Ipswich Town",
+   "a": "Bournemouth",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Sunderland",
+   "a": "Chelsea",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Manchester United",
+   "a": "Aston Villa",
+   "hs": 4,
+   "as": 4
+  },
+  {
+   "d": "2026-11-03",
+   "h": "Villarreal",
+   "a": "Paris Saint-Germain",
+   "hs": 0,
+   "as": 6
+  },
+  {
+   "d": "2026-11-04",
+   "h": "AEK Athen",
+   "a": "Real Madrid",
+   "hs": 2,
+   "as": 3
+  },
+  {
+   "d": "2026-11-04",
+   "h": "Fenerbahçe",
+   "a": "Liverpool",
+   "hs": 3,
+   "as": 2
+  },
+  {
+   "d": "2026-11-04",
+   "h": "Borussia Dortmund",
+   "a": "Real Betis",
+   "hs": 2,
+   "as": 1
+  },
+  {
+   "d": "2026-11-04",
+   "h": "FC Porto",
+   "a": "SSC Napoli",
+   "hs": 4,
+   "as": 1
+  },
+  {
+   "d": "2026-11-04",
+   "h": "PSV Eindhoven",
+   "a": "Club Brugge",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-04",
+   "h": "RB Leipzig",
+   "a": "Manchester City",
+   "hs": 2,
+   "as": 3
+  },
+  {
+   "d": "2026-11-04",
+   "h": "RC Lens",
+   "a": "Como 1907",
+   "hs": 1,
+   "as": 9
+  },
+  {
+   "d": "2026-11-04",
+   "h": "Slavia Prag",
+   "a": "Arsenal",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-04",
+   "h": "Viking FK",
+   "a": "Sabah",
+   "hs": 4,
+   "as": 1
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Winnipeg Jets",
+   "a": "Tampa Bay Lightning",
+   "hs": 4,
+   "as": 3
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Toronto Maple Leafs",
+   "a": "New Jersey Devils",
+   "hs": 0,
+   "as": 4
+  },
+  {
+   "d": "2026-11-09",
+   "h": "Calgary Flames",
+   "a": "Philadelphia Flyers",
+   "hs": 4,
+   "as": 3
+  },
+  {
+   "d": "2026-11-09",
+   "h": "Edmonton Oilers",
+   "a": "New York Rangers",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-10",
+   "h": "San Jose Sharks",
+   "a": "New York Islanders",
+   "hs": 3,
+   "as": 2
+  },
+  {
+   "d": "2026-11-10",
+   "h": "Winnipeg Jets",
+   "a": "New Jersey Devils",
+   "hs": 4,
+   "as": 2
+  },
+  {
+   "d": "2026-11-10",
+   "h": "Toronto Maple Leafs",
+   "a": "Colorado Avalanche",
+   "hs": 3,
+   "as": 6
+  },
+  {
+   "d": "2026-11-10",
+   "h": "Montreal Canadiens",
+   "a": "Minnesota Wild",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-10",
+   "h": "Ottawa Senators",
+   "a": "Washington Capitals",
+   "hs": 2,
+   "as": 3
+  },
+  {
+   "d": "2026-11-10",
+   "h": "Columbus Blue Jackets",
+   "a": "Florida Panthers",
+   "hs": 1,
+   "as": 4
+  },
+  {
+   "d": "2026-11-10",
+   "h": "St. Louis Blues",
+   "a": "Detroit Red Wings",
+   "hs": 3,
+   "as": 2
+  },
+  {
+   "d": "2026-11-10",
+   "h": "Los Angeles Kings",
+   "a": "Nashville Predators",
+   "hs": 0,
+   "as": 3
+  },
+  {
+   "d": "2026-11-11",
+   "h": "Buffalo Sabres",
+   "a": "Tampa Bay Lightning",
+   "hs": 3,
+   "as": 8
+  },
+  {
+   "d": "2026-11-11",
+   "h": "Calgary Flames",
+   "a": "New York Rangers",
+   "hs": 1,
+   "as": 3
+  },
+  {
+   "d": "2026-11-11",
+   "h": "Edmonton Oilers",
+   "a": "Philadelphia Flyers",
+   "hs": 3,
+   "as": 2
+  },
+  {
+   "d": "2026-11-11",
+   "h": "Vegas Golden Knights",
+   "a": "Utah Mammoth",
+   "hs": 5,
+   "as": 3
+  },
+  {
+   "d": "2026-11-11",
+   "h": "San Jose Sharks",
+   "a": "Pittsburgh Penguins",
+   "hs": 2,
+   "as": 3
+  },
+  {
+   "d": "2026-11-11",
+   "h": "Anaheim Ducks",
+   "a": "Nashville Predators",
+   "hs": 2,
+   "as": 4
+  }
+ ],
+ "TIPP_DER_WOCHE": "e9"
+}

@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Spielstand: jeder liest (für Ranglisten), nur du selbst schreibst deinen
+    match /players/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Gruppen: anmelden zum Lesen und Erstellen, ändern nur wer sie erstellt hat
+    match /groups/{code} {
+      allow read, create: if request.auth != null;
+      allow update, delete: if request.auth != null && resource.data.by == request.auth.uid;
+    }
+    // Deine Markierungen «Setzen / Finger weg»: alle lesen, niemand schreibt (später deine E-Mail eintragen)
+    match /meta/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
