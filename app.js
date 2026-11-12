@@ -739,9 +739,9 @@ async function nachLogin() {
 }
 function loginBinden() {
   const msg = $("#authMsg"); const say = (t) => { msg.textContent = t; msg.hidden = !t; };
-  $("#authGoogle").onclick = async () => { if (!fb) return say("Anmeldung ist gerade nicht erreichbar."); say(""); try { await fb.google(); nachLogin(); } catch (e) { say(fehlerText(e)); } };
-  $("#authLogin").onclick = async () => { if (!fb) return say("Anmeldung ist gerade nicht erreichbar."); say(""); try { await fb.login($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerText(e)); } };
-  $("#authNew").onclick = async () => { if (!fb) return say("Anmeldung ist gerade nicht erreichbar."); say(""); try { await fb.register($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerText(e)); } };
+  $("#authGoogle").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.google(); nachLogin(); } catch (e) { say(fehlerText(e)); } };
+  $("#authLogin").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.login($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerText(e)); } };
+  $("#authNew").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.register($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerText(e)); } };
   $("#authReset").onclick = async () => { const m = $("#authMail").value.trim(); if (!m) { say("Gib zuerst deine E-Mail ein."); $("#authMail").focus(); return; } try { await fb.reset(m); say("Wir haben dir eine E-Mail zum Zurücksetzen geschickt."); } catch (e) { say(fehlerText(e)); } };
   $("#authSkip").onclick = () => { gruppeNachLogin = null; if (profil) $("#onb").hidden = true; else showStep(draft.nick ? 3 : 2); };
 }
@@ -780,6 +780,17 @@ function wiederherstellen(x) {
   store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("gespielt", gespielt); store.set("votes", votes); store.set("team", team);
   return !!x.nick;
 }
+// firebase.js ist ein Modul und lädt nach diesem Script: darauf warten
+function fbBereit() {
+  return new Promise((ok) => {
+    let n = 0;
+    (function warte() {
+      if (window.tkFirebase) { window.tkFirebase.then(ok, () => ok(null)); return; }
+      if (++n > 200) { ok(null); return; }
+      setTimeout(warte, 50);
+    })();
+  });
+}
 let unsubs = [];
 async function gruppeLaden() {
   unsubs.forEach((u) => { try { u(); } catch {} }); unsubs = [];
@@ -789,7 +800,7 @@ async function gruppeLaden() {
   try { unsubs.push(db.mitglieder(profil.gruppe, (list) => { mitglieder = list; renderGruppe(); renderStatistik(); tippDerWoche(); })); } catch {}
 }
 async function initDb() {
-  fb = await (window.tkFirebase || Promise.resolve(null));
+  fb = await fbBereit();
   if (!fb) return;
   db = fb.db;
   try { db.doc("meta/flynn").onSnapshot((x) => { flynn = (x && x.picks) || {}; renderTipps(); }); } catch {}
