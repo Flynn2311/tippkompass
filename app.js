@@ -347,7 +347,7 @@ function kombiEl(k) {
   if (k.gross) { const ein = k.einsatz || 10; const hq = h("div", "kombi-big"); hq.append(h("span", null, "Mögliche Quote"), h("b", null, q >= 100 ? num(q, 0) : num(q, 2)), h("small", null, "Aus " + fr(ein) + " werden " + fr(ein * q))); head.append(hq); }
   const ul = h("ul");
   k.legs.forEach(({ g, e }) => { const li = h("li"); li.append(h("span", null, label(g, e.k) + (e.k === "u" ? "" : " gewinnt")), h("small", null, g.h + " – " + g.a), h("b", null, num(out(g, e.k).q, 2))); ul.append(li); });
-  const nums = h("div", "kombi-nums"); if (!k.gross) nums.append(h("div", null, "Gesamtquote"), h("b", null, num(q, 2))); nums.append(h("div", null, "Chance, dass alles aufgeht"), h("b", null, p < 0.05 ? "etwa 1 zu " + num(Math.round(1 / p / 10) * 10, 0) : pct(p * 100)));
+  const nums = h("div", "kombi-nums"); if (!k.gross) nums.append(h("div", null, "Gesamtquote"), h("b", null, num(q, 2)), h("div", null, "Gewinn bei Fr. 10 Einsatz"), h("b", "k-gewinn", fr(10 * q))); nums.append(h("div", null, "Chance, dass alles aufgeht"), h("b", null, p < 0.05 ? "etwa 1 zu " + num(Math.round(1 / p / 10) * 10, 0) : pct(p * 100)));
   const actions = h("div", "kombi-act");
   const take = h("button", "btn", "In den Tippschein"); take.onclick = () => { schein = k.legs.map(({ g, e }) => ({ g: g.id, k: e.k })); renderAll(); go("schein"); };
   const copy = h("button", "btn ghost", "Für Sporttip kopieren"); copy.onclick = () => kopieren(k.legs.map(({ g, e }) => ({ g: g.id, k: e.k })), k.name);
@@ -592,8 +592,43 @@ function wettKarte(w) {
   top.append(h("b", null, (w.picks.length > 1 ? "Kombi · " : "") + fr(w.einsatz) + " auf " + num(q, 2)), h("span", "st " + st, st === "offen" ? "Offen" : st === "gewonnen" ? "+" + fr(w.einsatz * q - w.einsatz) : st === "zurueck" ? "Einsatz zurück" : "−" + fr(w.einsatz)));
   el.append(top);
   if (w.vers || w.boost) { const t = h("div", "jtags"); if (w.vers) t.append(h("small", null, "Versichert")); if (w.boost) t.append(h("small", null, "Boost +10 %")); el.append(t); }
-  w.picks.forEach((p) => { const g = spiel(p.g); if (g) el.append(h("div", "vs", (g.res ? (g.res === p.k ? "✓ " : "✗ ") : "· ") + label(g, p.k) + " (" + g.h + " – " + g.a + ")")); });
+  w.picks.forEach((p) => {
+    const g = spiel(p.g);
+    if (!g) { el.append(h("div", "vs", "· Spiel nicht mehr in den Daten")); return; }
+    const zeile = h("button", "pick-btn"); zeile.setAttribute("aria-expanded", "false");
+    zeile.append(h("span", "pk-ic " + (g.res ? (g.res === p.k ? "ok" : "falsch") : "offen"), g.res ? (g.res === p.k ? "✓" : "✗") : "·"), h("span", "pk-t", label(g, p.k) + (p.k === "u" ? "" : " gewinnt")), h("small", null, g.h + " – " + g.a), h("span", "pk-pf", "Infos"));
+    const info = spielInfo(g, p.k); info.hidden = true;
+    zeile.onclick = () => { const o = zeile.getAttribute("aria-expanded") === "true"; zeile.setAttribute("aria-expanded", String(!o)); info.hidden = o; };
+    el.append(zeile, info);
+  });
   return el;
+}
+function spielInfo(g, k) {
+  const d = h("div", "spielinfo");
+  const anpfiff = new Date(g.zeit);
+  const erg = RESULTATE.filter((r) => r.h === g.h && r.a === g.a).sort((x, y) => y.d.localeCompare(x.d))[0];
+  let stand;
+  if (g.res) stand = "Fertig" + (erg ? ": " + g.h + " " + erg.hs + ":" + erg.as + " " + g.a : "") + " · dein Tipp ist " + (g.res === k ? "richtig" : "falsch");
+  else if (anpfiff < new Date()) stand = "Läuft gerade oder ist fertig. Das Resultat kommt mit dem nächsten Update.";
+  else stand = "Anpfiff " + fmtShort.format(anpfiff) + " um " + fmtTime.format(anpfiff) + " · " + g.liga;
+  d.append(h("div", "si-stand", stand));
+  const ch = h("div", "si-chancen");
+  [["h", g.h], ["u", "Unentschieden"], ["a", g.a]].filter(([kk]) => g.p[kk] != null).forEach(([kk, n]) => {
+    const o = out(g, kk); const z = h("div", "si-c" + (kk === k ? " mein" : ""));
+    const bar = h("i"); bar.style.width = o.p + "%";
+    const tr = h("span", "si-track"); tr.append(bar);
+    z.append(h("span", "si-n", n), tr, h("b", null, pct(o.p)), h("small", null, "Quote " + num(o.q, 2)));
+    ch.append(z);
+  });
+  d.append(h("div", "si-k", "Siegchancen laut Statistik"), ch);
+  const top = TOPS.find((t) => t.id === g.id);
+  if (top) d.append(h("p", "si-why", top.text));
+  [g.h, g.a].forEach((team) => {
+    const f = form(team);
+    const r = h("div", "si-form"); r.append(h("b", null, team + ": "), h("span", null, f.length ? f.map((x) => (x.k === "S" ? "Sieg " : x.k === "U" ? "Remis " : "Niederlage ") + x.txt).join(" · ") : "keine aktuellen Resultate"));
+    d.append(r);
+  });
+  return d;
 }
 
 /* ================================================================
