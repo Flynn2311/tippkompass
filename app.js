@@ -672,8 +672,9 @@ function renderGruppe() {
   if (!profil?.gruppe || !gruppe) {
     const c = h("div", "card");
     c.append(h("h3", null, "Mit Kollegen tippen"), h("p", "sub", "Erstell eine Gruppe und leg fest, mit wie viel Geld jeder startet. Ihr tippt mit diesem Startgeld in der App, und am Ende seht ihr, wer am meisten hat. Echtes Geld wird in der App nicht eingesetzt."));
-    const b1 = h("button", "btn", "Gruppe erstellen"); b1.onclick = () => openOnb(4);
-    const b2 = h("button", "btn ghost", "Mit Code beitreten"); b2.style.marginTop = ".5rem"; b2.onclick = () => openOnb(5);
+    const start = (step) => { if (window.brauchtLogin && window.brauchtLogin(step)) return; openOnb(step); };
+    const b1 = h("button", "btn", "Gruppe erstellen"); b1.onclick = () => start(4);
+    const b2 = h("button", "btn ghost", "Mit Code beitreten"); b2.style.marginTop = ".5rem"; b2.onclick = () => start(5);
     c.append(b1, b2); box.append(c); return;
   }
   const ende = gruppe.ende ? new Date(gruppe.ende) : null;
@@ -806,7 +807,7 @@ $("#createGroup").onclick = async () => {
   const code = Math.random().toString(36).slice(2, 8).toUpperCase();
   gruppe = { name, start, ende };
   store.set("gruppe_" + code, gruppe);
-  if (db) { try { await db.doc("groups/" + code).set({ ...gruppe, by: me, at: Date.now() }); } catch { toast("Gruppe konnte nicht gespeichert werden."); } }
+  if (db) { try { await db.doc("groups/" + code).set({ ...gruppe, by: me, at: Date.now() }); } catch (e) { toast("Gruppe konnte nicht gespeichert werden" + (e && e.code ? " (" + e.code + ")" : "") + ". Bist du angemeldet?"); return; } }
   finish(code);
 };
 $("#joinGroup").onclick = async () => {
@@ -847,6 +848,7 @@ function loginBinden() {
   $("#authSkip").onclick = () => { gruppeNachLogin = null; if (profil) $("#onb").hidden = true; else showStep(draft.nick ? 3 : 2); };
 }
 loginBinden();
+window.brauchtLogin = (step) => { if (fb && !me) { gruppeNachLogin = step; toast("Für Gruppen brauchst du ein Konto"); openOnb(0); return true; } return false; };
 
 function finish(code) {
   const neueGruppe = code && code !== profil?.gruppe;
