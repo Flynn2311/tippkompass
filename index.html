@@ -528,7 +528,7 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
 <div class="app">
   <header class="top">
     <div><h1 class="brand">Tipp<span>kompass</span></h1><div class="tagline">Meine Sporttipps für Fussball und Eishockey</div></div>
-    <div class="top-r"><button class="profbtn" id="profBtn" aria-label="Profil"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button><div class="stand" id="stand"></div></div>
+    <div class="top-r"><div class="stand" id="stand"></div></div>
   </header>
   <div class="promise"><span>Kostenlos</span><span>Keine Werbung</span><span>Jeder Tipp erklärt</span></div>
   <div class="stale" id="stale" hidden></div>
@@ -603,11 +603,6 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
     </div>
   </section>
 
-  <section class="view" id="v-statistik" hidden>
-    <h2>Deine Statistik</h2>
-    <p class="sub">Wie gut du tippst.</p>
-    <div id="statistik"></div>
-  </section>
 
   <section class="view" id="v-shop" hidden>
     <h2>Shop</h2>
@@ -622,6 +617,10 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
 
   <section class="view" id="v-profil" hidden>
     <h2>Profil</h2>
+    <div id="kontoBox"></div>
+    <h2 class="h2klein">Deine Statistik</h2>
+    <div id="statistik"></div>
+    <h2 class="h2klein">Einstellungen</h2>
     <div id="profilBox"></div>
   </section>
 
@@ -702,9 +701,9 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
   <nav role="tablist" aria-label="Bereiche">
     <button role="tab" aria-selected="true" data-view="tipps"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l1.8 3.7 4 .6-2.9 2.8.7 4L12 16.2 8.4 18l.7-4L6.2 11.3l4-.6z"/></svg>Tipps</button>
     <button role="tab" aria-selected="false" data-view="schein"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Tippschein<span class="badge" id="slipCount" hidden>0</span></button>
-    <button role="tab" aria-selected="false" data-view="statistik"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Statistik</button>
     <button role="tab" aria-selected="false" data-view="shop"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>Shop</button>
     <button role="tab" aria-selected="false" data-view="gruppe"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5M15 14.5c2.8-.3 5 1.4 6 4.5"/></svg>Gruppe</button>
+    <button role="tab" aria-selected="false" data-view="profil"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profil</button>
 
   </nav>
 </div>

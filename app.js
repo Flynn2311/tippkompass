@@ -729,7 +729,7 @@ function renderGruppe() {
 function renderProfil() {
   const box = $("#profilBox"); box.replaceChildren();
   if (!profil) return;
-  const c = h("div", "card"); c.append(h("h3", null, "Dein Profil"));
+  const c = h("div", "card"); c.append(h("h3", null, "Name und Lieblingsteam"));
   const f = h("div", "field"); const l = h("label", null, "Spielername"); l.htmlFor = "nick"; const i = h("input"); i.id = "nick"; i.value = profil.nick; i.maxLength = 20;
   i.onchange = () => { profil.nick = i.value.trim().slice(0, 20) || profil.nick; speichern(); renderGruppe(); };
   f.append(l, i); c.append(f);
@@ -759,7 +759,7 @@ function renderProfil() {
     ac.append(h("p", "sub", "Du bist nicht angemeldet. Dein Spielstand ist nur auf diesem Gerät gespeichert."));
     const li = h("button", "btn", "Anmelden oder Konto erstellen"); li.onclick = () => openOnb(0); ac.append(li);
   }
-  box.append(ac);
+  const kb = $("#kontoBox"); if (kb) kb.replaceChildren(ac); else box.append(ac);
   const info = h("div", "card");
   info.append(h("h3", null, "So nutzt du Tippkompass"));
   const erk = h("button", "btn ghost", "Erklärung zum Tippen ansehen"); erk.onclick = () => { erklAusProfil = true; openOnb("erkl"); }; info.append(erk);
@@ -929,12 +929,11 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 function badge() { const c = $("#slipCount"); c.textContent = schein.length; c.hidden = !schein.length; }
 function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
-  ["tipps", "schein", "statistik", "shop", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
+  ["tipps", "schein", "shop", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
   if (view === "schein") renderSchein();
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => go(b.dataset.view)));
-$("#profBtn").onclick = () => go("profil");
 setInterval(() => { renderTipps(); renderSchein(); }, 60000);
 document.querySelectorAll(".sports button").forEach((b) => (b.onclick = () => {
   sport = b.dataset.sport;
