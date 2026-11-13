@@ -499,6 +499,14 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
 .si-form { font-size: .85rem; color: var(--soft); margin-top: .3rem; line-height: 1.4; }
 .si-form b { color: var(--ink); }
 .kombi .k-gewinn { color: #E2A882; }
+.leer { border: 1px dashed var(--line); padding: 1rem; border-radius: 4px; margin-top: .8rem; }
+.leer b { font-family: var(--serif); font-size: 1.2rem; font-weight: 600; }
+.leer-steps { margin: .6rem 0 .9rem; padding-left: 1.2rem; color: var(--soft); line-height: 1.6; }
+.st.ungueltig { color: var(--soft); }
+.pwrap { position: relative; }
+.pwrap input { padding-right: 3.2rem; }
+.eye { position: absolute; right: .3rem; top: 50%; transform: translateY(-50%); background: none; border: 0; padding: .4rem; color: var(--soft); font: inherit; font-size: .8rem; font-weight: 700; }
+.authcode { display: block; font-size: .78rem; color: var(--soft); margin-top: .2rem; }
 .google { display: flex; align-items: center; justify-content: center; gap: .6rem; background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line); }
 .oder { display: flex; align-items: center; gap: .7rem; color: var(--soft); font-size: .85rem; margin: 1rem 0 .4rem; }
 .oder::before, .oder::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -650,8 +658,8 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
       <p>Mit einem Konto bleibt dein Spielstand gespeichert, auch auf einem neuen Handy. Für Gruppen brauchst du eins.</p>
       <button class="btn google" id="authGoogle"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.6v3h3.9c2.3-2.1 3.5-5.2 3.5-8.8z"/><path fill="#34A853" d="M12 24c3.2 0 6-1.1 8-2.9l-3.9-3c-1.1.7-2.5 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5H1.3v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.3 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.3a12 12 0 0 0 0 10.8z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.3 6.6l4 3.1c.9-2.9 3.6-4.9 6.7-4.9z"/></svg>Mit Google anmelden</button>
       <div class="oder"><span>oder mit E-Mail</span></div>
-      <div class="field"><label for="authMail">E-Mail</label><input id="authMail" type="email" autocomplete="email" inputmode="email"></div>
-      <div class="field"><label for="authPw">Passwort</label><input id="authPw" type="password" autocomplete="current-password" minlength="6"></div>
+      <div class="field"><label for="authMail">E-Mail</label><input id="authMail" type="email" autocomplete="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      <div class="field"><label for="authPw">Passwort</label><div class="pwrap"><input id="authPw" type="password" autocomplete="current-password" minlength="6" autocapitalize="none" autocorrect="off" spellcheck="false"><button type="button" class="eye" id="pwEye" aria-label="Passwort anzeigen">Zeigen</button></div></div>
       <p class="authmsg" id="authMsg" hidden></p>
       <div class="authrow"><button class="btn" id="authLogin">Anmelden</button><button class="btn ghost" id="authNew">Konto erstellen</button></div>
       <button class="linkbtn" id="authReset">Passwort vergessen?</button>

@@ -146,7 +146,17 @@ function outcomes(g) {
 }
 const bestOf = (g) => outcomes(g).reduce((a, b) => (b.p > a.p ? b : a));
 const spiel = (id) => SPIELE.find((x) => x.id === id);
-const offen = (g) => !g.res && new Date(g.zeit) > now;
+const offen = (g) => !g.res && new Date(g.zeit).getTime() > Date.now();
+// Uhrzeit vom Server (nicht vom Handy), damit niemand die Uhr zurückstellt
+async function serverZeit() {
+  try {
+    const r = await fetch("data.json?z=" + Date.now(), { method: "HEAD", cache: "no-store" });
+    const d = r.headers.get("date");
+    if (d) return new Date(d).getTime();
+  } catch {}
+  return null;
+}
+const gesperrt = (w, p) => { const g = spiel(p.g); return g && (w.srv || w.ts) >= new Date(g.zeit).getTime(); };
 const label = (g, k) => (k === "u" ? "Unentschieden" : k === "h" ? g.h : g.a);
 const out = (g, k) => outcomes(g).find((o) => o.k === k);
 function stufe(p) {
@@ -167,6 +177,7 @@ function einschaetzung(g) {
 
 /* ---------- Gruppen-Wetten ---------- */
 function status(w) {
+  if (w.picks.some((p) => gesperrt(w, p))) return "ungueltig";
   let offen = false, falsch = 0;
   for (const p of w.picks) {
     const g = spiel(p.g);
@@ -180,7 +191,7 @@ function status(w) {
 const wQuote = (w) => w.picks.reduce((t, p) => t * p.q, 1) * (w.boost ? 1.1 : 1);
 function konto(list, start) {
   let k = start, gew = 0;
-  list.forEach((w) => { k -= w.einsatz; const s = status(w); if (s === "gewonnen") { k += w.einsatz * wQuote(w); gew += w.einsatz * wQuote(w) - w.einsatz; } else if (s === "zurueck") k += w.einsatz; else if (s === "verloren") gew -= w.einsatz; });
+  list.forEach((w) => { k -= w.einsatz; const s = status(w); if (s === "gewonnen") { k += w.einsatz * wQuote(w); gew += w.einsatz * wQuote(w) - w.einsatz; } else if (s === "zurueck" || s === "ungueltig") k += w.einsatz; else if (s === "verloren") gew -= w.einsatz; });
   const fertig = list.filter((w) => status(w) !== "offen");
   return { stand: k, gewinn: gew, treffer: fertig.filter((w) => status(w) === "gewonnen").length, fertig: fertig.length, offen: list.length - fertig.length, einsatzOffen: list.filter((w) => status(w) === "offen").reduce((t, w) => t + w.einsatz, 0) };
 }
@@ -508,7 +519,17 @@ async function kopieren(legs, titel) {
 
 function renderSchein() {
   const box = $("#slip"); box.replaceChildren();
-  if (!schein.length) { box.append(h("div", "empty", "Noch leer. Wähl bei «Tipps» einen Tipp oder eine Kombi.")); renderMeineWetten(); return; }
+  const vorher = schein.length; schein = schein.filter((s) => { const g = spiel(s.g); return g && offen(g); });
+  if (schein.length < vorher) badge();
+  if (!schein.length) {
+    const leer = h("div", "leer");
+    leer.append(h("b", null, "Dein Tippschein ist noch leer"));
+    const ol = h("ol", "leer-steps");
+    ["Geh auf «Tipps» oder «Kombis».", "Drück bei einem Spiel auf «+ Tippschein».", "Komm hierher zurück und setz dein Spielgeld."].forEach((t) => ol.append(h("li", null, t)));
+    const zu = h("button", "btn", "Zu den Tipps"); zu.onclick = () => go("tipps");
+    leer.append(ol, zu); box.append(leer);
+    renderMeineWetten(); return;
+  }
   let q = 1, p = 1;
   schein.forEach((s) => {
     const g = spiel(s.g), o = out(g, s.k);
@@ -549,11 +570,17 @@ function renderSchein() {
   const ende = zielGruppe && gruppe.ende && new Date(gruppe.ende) < now;
   btn.disabled = frei < 1 || ende;
   if (ende) btn.textContent = "Die Runde ist vorbei";
-  btn.onclick = () => {
+  btn.onclick = async () => {
     const e = Math.round((parseFloat(inp.value) || 0) * 100) / 100;
     if (e < 1) { inp.focus(); return; }
     if (e > frei) { toast("So viel hast du nicht mehr: " + fr(frei)); return; }
-    const w = { id: "w" + Date.now(), ts: Date.now(), einsatz: e, picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) };
+    btn.disabled = true;
+    const srv = await serverZeit();
+    btn.disabled = false;
+    if (!srv) { toast("Keine Verbindung. Setzen geht nur mit Internet."); return; }
+    const zuSpaet = schein.filter((s) => { const g = spiel(s.g); return !g || g.res || new Date(g.zeit).getTime() <= srv; });
+    if (zuSpaet.length) { schein = schein.filter((s) => !zuSpaet.includes(s)); speichern(); renderAll(); toast(zuSpaet.length === 1 ? "Ein Spiel hat schon angefangen und wurde entfernt" : zuSpaet.length + " Spiele haben schon angefangen und wurden entfernt"); return; }
+    const w = { id: "w" + Date.now(), ts: srv, srv, einsatz: e, picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) };
     if (useVers) w.vers = true; if (useBoost) w.boost = true;
     (zielGruppe ? wetten : solo).push(w);
     schein = []; speichern(); renderAll(); toast("Gesetzt");
@@ -567,7 +594,12 @@ function renderSchein() {
   form.append(btn);
   if (!zielGruppe && frei < 1 && !k.offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
   const nur = h("button", "btn ghost", "Nur tippen, ohne Einsatz"); nur.style.marginTop = ".5rem";
-  nur.onclick = () => { gespielt.push({ ts: Date.now(), picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) }); schein = []; speichern(); renderAll(); toast("Getippt"); };
+  nur.onclick = async () => {
+    const srv = await serverZeit(); if (!srv) { toast("Keine Verbindung. Tippen geht nur mit Internet."); return; }
+    const ok = schein.filter((s) => { const g = spiel(s.g); return g && !g.res && new Date(g.zeit).getTime() > srv; });
+    if (ok.length < schein.length) { schein = ok; speichern(); renderAll(); toast("Spiele, die schon laufen, wurden entfernt"); return; }
+    gespielt.push({ ts: srv, srv, picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) }); schein = []; speichern(); renderAll(); toast("Getippt");
+  };
   form.append(nur);
   sum.append(form);
   box.append(sum);
@@ -576,12 +608,13 @@ function renderSchein() {
 
 function renderMeineWetten() {
   const box = $("#wetten"); box.replaceChildren();
-  $("#wettenWrap").hidden = !solo.length && !wetten.length;
+  $("#wettenWrap").hidden = !profil;
   const k = konto(solo, SOLO_START);
-  if (solo.length || !profil?.gruppe) {
+  {
     const kh = h("div", "kontoline"); kh.append(h("span", null, "Mein Spielgeld"), h("b", null, fr(spielgeld())), h("small", null, (k.gewinn >= 0 ? "+" : "−") + fr(Math.abs(k.gewinn)) + " seit Start mit " + fr(SOLO_START)));
     box.append(kh);
     solo.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w)));
+    if (!solo.length && !wetten.length) box.append(h("p", "sub", "Noch keine Wetten. Sobald du etwas setzt, siehst du es hier."));
   }
   if (wetten.length) { box.append(h("h3", null, "In der Gruppe")); wetten.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w))); }
 }
@@ -589,7 +622,7 @@ function wettKarte(w) {
   const st = status(w), q = wQuote(w);
   const el = h("div", "bet " + st);
   const top = h("div", "bet-top");
-  top.append(h("b", null, (w.picks.length > 1 ? "Kombi · " : "") + fr(w.einsatz) + " auf " + num(q, 2)), h("span", "st " + st, st === "offen" ? "Offen" : st === "gewonnen" ? "+" + fr(w.einsatz * q - w.einsatz) : st === "zurueck" ? "Einsatz zurück" : "−" + fr(w.einsatz)));
+  top.append(h("b", null, (w.picks.length > 1 ? "Kombi · " : "") + fr(w.einsatz) + " auf " + num(q, 2)), h("span", "st " + st, st === "offen" ? "Offen" : st === "gewonnen" ? "+" + fr(w.einsatz * q - w.einsatz) : st === "zurueck" ? "Einsatz zurück" : st === "ungueltig" ? "Ungültig, Einsatz zurück" : "−" + fr(w.einsatz)));
   el.append(top);
   if (w.vers || w.boost) { const t = h("div", "jtags"); if (w.vers) t.append(h("small", null, "Versichert")); if (w.boost) t.append(h("small", null, "Boost +10 %")); el.append(t); }
   w.picks.forEach((p) => {
@@ -796,6 +829,7 @@ function fehlerText(e) {
   if (c.includes("too-many-requests")) return "Zu viele Versuche. Warte kurz.";
   return "Das hat nicht geklappt. Versuch es nochmals.";
 }
+function fehlerMitCode(e) { return fehlerText(e) + (e && e.code ? " (Code: " + e.code + ")" : ""); }
 async function nachLogin() {
   // warten bis onAuth den Spielstand geladen hat
   setTimeout(() => {
@@ -804,11 +838,12 @@ async function nachLogin() {
   }, 900);
 }
 function loginBinden() {
+  $("#pwEye").onclick = () => { const i = $("#authPw"); const zeigen = i.type === "password"; i.type = zeigen ? "text" : "password"; $("#pwEye").textContent = zeigen ? "Verbergen" : "Zeigen"; };
   const msg = $("#authMsg"); const say = (t) => { msg.textContent = t; msg.hidden = !t; };
-  $("#authGoogle").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.google(); nachLogin(); } catch (e) { say(fehlerText(e)); } };
-  $("#authLogin").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.login($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerText(e)); } };
-  $("#authNew").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.register($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerText(e)); } };
-  $("#authReset").onclick = async () => { const m = $("#authMail").value.trim(); if (!m) { say("Gib zuerst deine E-Mail ein."); $("#authMail").focus(); return; } try { await fb.reset(m); say("Wir haben dir eine E-Mail zum Zurücksetzen geschickt."); } catch (e) { say(fehlerText(e)); } };
+  $("#authGoogle").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.google(); nachLogin(); } catch (e) { say(fehlerMitCode(e)); } };
+  $("#authLogin").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.login($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerMitCode(e)); } };
+  $("#authNew").onclick = async () => { if (!fb) fb = await fbBereit(); if (!fb) return say("Anmeldung ist gerade nicht erreichbar. Prüf deine Internetverbindung."); say(""); try { await fb.register($("#authMail").value.trim(), $("#authPw").value); nachLogin(); } catch (e) { say(fehlerMitCode(e)); } };
+  $("#authReset").onclick = async () => { const m = $("#authMail").value.trim(); if (!m) { say("Gib zuerst deine E-Mail ein."); $("#authMail").focus(); return; } try { await fb.reset(m); say("Wir haben dir eine E-Mail zum Zurücksetzen geschickt."); } catch (e) { say(fehlerMitCode(e)); } };
   $("#authSkip").onclick = () => { gruppeNachLogin = null; if (profil) $("#onb").hidden = true; else showStep(draft.nick ? 3 : 2); };
 }
 loginBinden();
@@ -893,10 +928,12 @@ function badge() { const c = $("#slipCount"); c.textContent = schein.length; c.h
 function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
   ["tipps", "schein", "statistik", "shop", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
+  if (view === "schein") renderSchein();
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => go(b.dataset.view)));
 $("#profBtn").onclick = () => go("profil");
+setInterval(() => { renderTipps(); renderSchein(); }, 60000);
 document.querySelectorAll(".sports button").forEach((b) => (b.onclick = () => {
   sport = b.dataset.sport;
   document.querySelectorAll(".sports button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
@@ -927,7 +964,7 @@ if (profil?.gruppe) gruppe = store.get("gruppe_" + profil.gruppe, null);
 function allePicks(liste) {
   // liste: [{ts, picks, einsatz?}] -> einzelne Tipps mit Ergebnis
   const r = [];
-  liste.forEach((w) => w.picks.forEach((p) => { const g = spiel(p.g); r.push({ ...p, ts: w.ts, g0: g, res: g?.res ? (g.res === p.k ? "ok" : "falsch") : "offen", p: g ? out(g, p.k).p : null, liga: g?.liga || "?" }); }));
+  liste.forEach((w) => w.picks.forEach((p) => { if (gesperrt(w, p)) return; const g = spiel(p.g); r.push({ ...p, ts: w.ts, g0: g, res: g?.res ? (g.res === p.k ? "ok" : "falsch") : "offen", p: g ? out(g, p.k).p : null, liga: g?.liga || "?" }); }));
   return r;
 }
 function trefferquote(ps) { const e = ps.filter((x) => x.res !== "offen"); return e.length ? e.filter((x) => x.res === "ok").length / e.length * 100 : null; }
