@@ -129,7 +129,10 @@ let team = store.get("team", "");
 let gespielt = store.get("gespielt", []);
 const SOLO_START = 1000;
 let solo = store.get("solo", []);            // eigene Spielgeld-Wetten ohne Gruppe [{id, ts, einsatz, picks}]
-let konto_ziel = store.get("konto_ziel", "solo"); // "solo" | "gruppe"  // für Sporttip kopierte Tipps [{ts, picks:[{g,k,q}]}]
+let konto_ziel = store.get("konto_ziel", "solo");
+let kaeufe = store.get("kaeufe", []);         // Shop-Käufe [{ts, id, preis, an?}]
+let aktiv = store.get("aktiv", { titel: null, farbe: null });
+let resetTs = store.get("resetTs", 0);        // Spielgeld-Neustart: ältere Käufe zählen nicht mehr // "solo" | "gruppe"  // für Sporttip kopierte Tipps [{ts, picks:[{g,k,q}]}]
 let db = null, me = null, isOwner = false, authUser = null, fb = null;
 const OWNER_EMAILS = []; // hier deine E-Mail eintragen, damit du «Setzen/Finger weg» markieren kannst
 
@@ -164,18 +167,20 @@ function einschaetzung(g) {
 
 /* ---------- Gruppen-Wetten ---------- */
 function status(w) {
-  let alle = true;
+  let offen = false, falsch = 0;
   for (const p of w.picks) {
     const g = spiel(p.g);
-    if (!g || !g.res) { alle = false; continue; }
-    if (g.res !== p.k) return "verloren";
+    if (!g || !g.res) { offen = true; continue; }
+    if (g.res !== p.k) falsch++;
   }
-  return alle ? "gewonnen" : "offen";
+  if (falsch === 0) return offen ? "offen" : "gewonnen";
+  if (w.vers && w.picks.length > 1 && falsch === 1) return offen ? "offen" : "zurueck";
+  return "verloren";
 }
-const wQuote = (w) => w.picks.reduce((t, p) => t * p.q, 1);
+const wQuote = (w) => w.picks.reduce((t, p) => t * p.q, 1) * (w.boost ? 1.1 : 1);
 function konto(list, start) {
   let k = start, gew = 0;
-  list.forEach((w) => { k -= w.einsatz; if (status(w) === "gewonnen") { k += w.einsatz * wQuote(w); gew += w.einsatz * wQuote(w) - w.einsatz; } else if (status(w) === "verloren") gew -= w.einsatz; });
+  list.forEach((w) => { k -= w.einsatz; const s = status(w); if (s === "gewonnen") { k += w.einsatz * wQuote(w); gew += w.einsatz * wQuote(w) - w.einsatz; } else if (s === "zurueck") k += w.einsatz; else if (s === "verloren") gew -= w.einsatz; });
   const fertig = list.filter((w) => status(w) !== "offen");
   return { stand: k, gewinn: gew, treffer: fertig.filter((w) => status(w) === "gewonnen").length, fertig: fertig.length, offen: list.length - fertig.length, einsatzOffen: list.filter((w) => status(w) === "offen").reduce((t, w) => t + w.einsatz, 0) };
 }
@@ -526,7 +531,7 @@ function renderSchein() {
   }
   const zielGruppe = konto_ziel === "gruppe" && hatGruppe;
   const k = zielGruppe ? konto(wetten, gruppe.start) : konto(solo, SOLO_START);
-  const frei = Math.max(0, Math.floor(k.stand * 100) / 100);
+  const frei = Math.max(0, Math.floor((zielGruppe ? k.stand : spielgeld()) * 100) / 100);
   const lab = h("label", null, (zielGruppe ? "In der Gruppe setzen" : "Mit Spielgeld setzen") + " · verfügbar " + fr(frei)); lab.htmlFor = "einsatz";
   const inp = h("input"); inp.id = "einsatz"; inp.type = "number"; inp.min = "1"; inp.step = "1"; inp.inputMode = "decimal"; inp.value = Math.min(10, Math.floor(frei));
   const gew = h("div", "lbl"); const upd = () => { gew.textContent = "Möglicher Gewinn: " + fr((parseFloat(inp.value) || 0) * q); }; inp.oninput = upd; upd();
@@ -539,11 +544,18 @@ function renderSchein() {
     if (e < 1) { inp.focus(); return; }
     if (e > frei) { toast("So viel hast du nicht mehr: " + fr(frei)); return; }
     const w = { id: "w" + Date.now(), ts: Date.now(), einsatz: e, picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) };
+    if (useVers) w.vers = true; if (useBoost) w.boost = true;
     (zielGruppe ? wetten : solo).push(w);
     schein = []; speichern(); renderAll(); toast("Gesetzt");
   };
-  form.append(lab, inp, gew, btn);
-  if (!zielGruppe && frei < 1 && !k.offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { solo = []; speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
+  const jk = h("div", "joker-opts"); let useVers = false, useBoost = false;
+  const jopt = (name, anz, onc) => { const b = h("button", "jopt", name + " · " + anz + " übrig"); b.setAttribute("aria-pressed", "false"); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); onc(on); }; jk.append(b); };
+  if (jokerUebrig("j-vers") > 0 && schein.length > 1) jopt("Versicherung", jokerUebrig("j-vers"), (on) => (useVers = on));
+  if (jokerUebrig("j-boost") > 0) jopt("Quoten-Boost +10 %", jokerUebrig("j-boost"), (on) => { useBoost = on; gew.textContent = "Möglicher Gewinn: " + fr((parseFloat(inp.value) || 0) * q * (on ? 1.1 : 1)); });
+  form.append(lab, inp, gew);
+  if (jk.children.length) form.append(jk);
+  form.append(btn);
+  if (!zielGruppe && frei < 1 && !k.offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
   const nur = h("button", "btn ghost", "Nur tippen, ohne Einsatz"); nur.style.marginTop = ".5rem";
   nur.onclick = () => { gespielt.push({ ts: Date.now(), picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) }); schein = []; speichern(); renderAll(); toast("Getippt"); };
   form.append(nur);
@@ -557,7 +569,7 @@ function renderMeineWetten() {
   $("#wettenWrap").hidden = !solo.length && !wetten.length;
   const k = konto(solo, SOLO_START);
   if (solo.length || !profil?.gruppe) {
-    const kh = h("div", "kontoline"); kh.append(h("span", null, "Mein Spielgeld"), h("b", null, fr(k.stand)), h("small", null, (k.gewinn >= 0 ? "+" : "−") + fr(Math.abs(k.gewinn)) + " seit Start mit " + fr(SOLO_START)));
+    const kh = h("div", "kontoline"); kh.append(h("span", null, "Mein Spielgeld"), h("b", null, fr(spielgeld())), h("small", null, (k.gewinn >= 0 ? "+" : "−") + fr(Math.abs(k.gewinn)) + " seit Start mit " + fr(SOLO_START)));
     box.append(kh);
     solo.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w)));
   }
@@ -567,8 +579,9 @@ function wettKarte(w) {
   const st = status(w), q = wQuote(w);
   const el = h("div", "bet " + st);
   const top = h("div", "bet-top");
-  top.append(h("b", null, (w.picks.length > 1 ? "Kombi · " : "") + fr(w.einsatz) + " auf " + num(q, 2)), h("span", "st " + st, st === "offen" ? "Offen" : st === "gewonnen" ? "+" + fr(w.einsatz * q - w.einsatz) : "−" + fr(w.einsatz)));
+  top.append(h("b", null, (w.picks.length > 1 ? "Kombi · " : "") + fr(w.einsatz) + " auf " + num(q, 2)), h("span", "st " + st, st === "offen" ? "Offen" : st === "gewonnen" ? "+" + fr(w.einsatz * q - w.einsatz) : st === "zurueck" ? "Einsatz zurück" : "−" + fr(w.einsatz)));
   el.append(top);
+  if (w.vers || w.boost) { const t = h("div", "jtags"); if (w.vers) t.append(h("small", null, "Versichert")); if (w.boost) t.append(h("small", null, "Boost +10 %")); el.append(t); }
   w.picks.forEach((p) => { const g = spiel(p.g); if (g) el.append(h("div", "vs", (g.res ? (g.res === p.k ? "✓ " : "✗ ") : "· ") + label(g, p.k) + " (" + g.h + " – " + g.a + ")")); });
   return el;
 }
@@ -593,7 +606,7 @@ function renderGruppe() {
   head.append(code);
   box.append(head);
 
-  const alle = [{ id: me || "ich", nick: profil.nick, wetten, ich: true }, ...mitglieder.filter((m) => m.gruppe === profil.gruppe && m.id !== me)];
+  const alle = [{ id: me || "ich", nick: profil.nick, wetten, kaeufe, aktiv, ich: true }, ...mitglieder.filter((m) => m.gruppe === profil.gruppe && m.id !== me)];
   const rows = alle.map((m) => ({ ...m, k: konto(m.wetten || [], gruppe.start) })).sort((a, b) => b.k.stand - a.k.stand);
   if (vorbei && rows.length) { const w = h("div", "winner"); w.append(h("span", null, "Sieger"), h("b", null, rows[0].nick + " gewinnt mit " + fr(rows[0].k.stand))); box.append(w); }
   box.append(rueckblick(rows));
@@ -604,7 +617,10 @@ function renderGruppe() {
     const li = h("li", m.ich ? "me" : "");
     const btn = h("button", "rk");
     btn.setAttribute("aria-expanded", String(offenMitglied === m.id));
-    const nm = h("span", "nm"); nm.append(h("span", null, m.nick + (m.ich ? " (du)" : "")));
+    const nm = h("span", "nm"); const nmTxt = h("span", "nick " + farbKlasse(m.ich ? aktiv : m.aktiv), m.nick + (m.ich ? " (du)" : ""));
+    if (hatClown(m.ich ? me || "ich" : m.id)) nmTxt.append(h("span", "clown", " 🤡"));
+    nm.append(nmTxt);
+    const gt = gekaufterTitel(m.ich ? aktiv : m.aktiv); if (gt) { const ts0 = h("span", "titles shoptitel"); ts0.append(h("small", null, gt)); nm.append(ts0); }
     if (tt[m.id]) { const ts = h("span", "titles"); tt[m.id].forEach((x) => ts.append(h("small", null, x))); nm.append(ts); }
     btn.append(h("span", "pos", String(i + 1)), nm);
     const right = h("span", "rk-r"); right.append(h("b", null, fr(m.k.stand)), h("small", m.k.gewinn >= 0 ? "pos" : "neg", (m.k.gewinn >= 0 ? "+" : "−") + fr(Math.abs(m.k.gewinn)) + " gewonnen"));
@@ -676,7 +692,7 @@ function renderProfil() {
   const a = h("a", null, "sos-spielsucht.ch"); a.href = "https://www.sos-spielsucht.ch"; help.append(a, ".");
   box.append(help);
   const reset = h("button", "x", "Alles zurücksetzen"); reset.style.marginTop = "1rem";
-  reset.onclick = () => { if (reset.dataset.ok) { profil = null; wetten = []; solo = []; gespielt = []; schein = []; gruppe = null; speichern(); openOnb(1); renderAll(); } else { reset.dataset.ok = "1"; reset.textContent = "Wirklich alles löschen? Nochmals tippen."; } };
+  reset.onclick = () => { if (reset.dataset.ok) { profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; schein = []; gruppe = null; speichern(); openOnb(1); renderAll(); } else { reset.dataset.ok = "1"; reset.textContent = "Wirklich alles löschen? Nochmals tippen."; } };
   box.append(reset);
 }
 
@@ -759,10 +775,10 @@ function finish(code) {
    Datenbank: Gruppe und eigene Tipps teilen
    ================================================================ */
 let syncT;
-function speichern() { store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("konto_ziel", konto_ziel); store.set("risiko", risiko); clearTimeout(syncT); syncT = setTimeout(sync, 500); }
+function speichern() { store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("konto_ziel", konto_ziel); store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs); store.set("risiko", risiko); clearTimeout(syncT); syncT = setTimeout(sync, 500); }
 async function sync() {
   if (!db || !me || !profil) return;
-  try { await db.doc("players/" + me).set({ nick: profil.nick, gruppe: profil.gruppe || null, wetten, votes, team, gespielt, solo, at: Date.now() }); } catch (e) { console.warn(e); }
+  try { await db.doc("players/" + me).set({ nick: profil.nick, gruppe: profil.gruppe || null, wetten, votes, team, gespielt, solo, kaeufe, aktiv, resetTs, at: Date.now() }); } catch (e) { console.warn(e); }
 }
 async function setFlynn(id, val) {
   if (val) flynn[id] = val; else delete flynn[id];
@@ -777,6 +793,10 @@ function wiederherstellen(x) {
   if (Array.isArray(x.gespielt)) gespielt = x.gespielt;
   if (x.votes) votes = x.votes;
   if (typeof x.team === "string") team = x.team;
+  if (Array.isArray(x.kaeufe)) kaeufe = x.kaeufe;
+  if (x.aktiv) aktiv = x.aktiv;
+  if (typeof x.resetTs === "number") resetTs = x.resetTs;
+  store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs);
   store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("gespielt", gespielt); store.set("votes", votes); store.set("team", team);
   return !!x.nick;
 }
@@ -822,10 +842,11 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 function badge() { const c = $("#slipCount"); c.textContent = schein.length; c.hidden = !schein.length; }
 function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
-  ["tipps", "schein", "statistik", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
+  ["tipps", "schein", "statistik", "shop", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => go(b.dataset.view)));
+$("#profBtn").onclick = () => go("profil");
 document.querySelectorAll(".sports button").forEach((b) => (b.onclick = () => {
   sport = b.dataset.sport;
   document.querySelectorAll(".sports button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
@@ -874,7 +895,7 @@ function renderStatistik() {
   kach("Höchste Quote getroffen", hq ? num(hq.q, 2) : "–", hq?.g0 ? label(hq.g0, hq.k) : "");
   // Spielgeld
   const ks = konto(solo, SOLO_START);
-  if (solo.length) kach("Mein Spielgeld", fr(ks.stand), (ks.gewinn >= 0 ? "+" : "−") + fr(Math.abs(ks.gewinn)) + " seit Start");
+  if (solo.length) kach("Mein Spielgeld", fr(spielgeld()), (ks.gewinn >= 0 ? "+" : "−") + fr(Math.abs(ks.gewinn)) + " seit Start");
   const fertig = wetten.filter((w) => status(w) !== "offen");
   if (fertig.length) { const plus = fertig.reduce((t, w) => t + (status(w) === "gewonnen" ? w.einsatz * wQuote(w) - w.einsatz : -w.einsatz), 0); kach("Gruppe: Plus/Minus", (plus >= 0 ? "+" : "−") + fr(Math.abs(plus)), fertig.length + " Wetten abgerechnet"); }
   // Kombis
@@ -913,7 +934,97 @@ function renderStatistik() {
   box.append(h("p", "sub", "Zählt alle Tipps, die du getippt, mit Spielgeld gesetzt oder für Sporttip kopiert hast. Langfristig gewinnt bei Wetten fast immer der Anbieter."));
 }
 
-function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderGruppe(); renderProfil(); badge(); }
+/* ---------- Shop ---------- */
+const SHOP = [
+  { id: "t-gluck", typ: "titel", name: "Glückspilz", preis: 150 },
+  { id: "t-eis", typ: "titel", name: "Eishockey-Profi", preis: 200 },
+  { id: "t-fuss", typ: "titel", name: "Fussballgott", preis: 200 },
+  { id: "t-under", typ: "titel", name: "Underdog-Jäger", preis: 250 },
+  { id: "t-kombi", typ: "titel", name: "Kombikönig", preis: 300 },
+  { id: "t-leg", typ: "titel", name: "Legende", preis: 1000 },
+  { id: "f-kupfer", typ: "farbe", name: "Kupfer", preis: 100 },
+  { id: "f-nacht", typ: "farbe", name: "Weiss auf Schwarz", preis: 250 },
+  { id: "f-gold", typ: "farbe", name: "Gold", preis: 400 },
+  { id: "j-vers", typ: "joker", name: "Kombi-Versicherung", preis: 120, info: "Geht bei einer Kombi genau ein Tipp daneben, bekommst du den Einsatz zurück." },
+  { id: "j-boost", typ: "joker", name: "Quoten-Boost", preis: 80, info: "+10 % Gewinn auf eine Wette, wenn sie aufgeht." },
+  { id: "s-clown", typ: "stich", name: "Clown verteilen", preis: 50, info: "Ein Kollege trägt 24 Stunden einen Clown neben dem Namen." },
+  { id: "s-schild", typ: "schild", name: "Schutzschild", preis: 60, info: "24 Stunden kann dir niemand einen Clown verpassen." },
+];
+const TAG = 864e5;
+const shopItem = (id) => SHOP.find((x) => x.id === id);
+function ausgaben() { return kaeufe.filter((k) => k.ts > resetTs).reduce((t, k) => t + k.preis, 0); }
+function spielgeld() { return konto(solo, SOLO_START).stand - ausgaben(); }
+const besitzt = (id) => kaeufe.some((k) => k.id === id);
+function jokerUebrig(id) {
+  const gekauft = kaeufe.filter((k) => k.id === id).length;
+  const feld = id === "j-vers" ? "vers" : "boost";
+  return gekauft - [...solo, ...wetten].filter((w) => w[feld]).length;
+}
+const gekaufterTitel = (a) => (a && a.titel && shopItem(a.titel) ? shopItem(a.titel).name : "");
+const farbKlasse = (a) => (a && a.farbe ? "nf-" + a.farbe : "");
+function schildAktiv(list, um) { return (list || []).some((k) => k.id === "s-schild" && k.ts <= um && um < k.ts + TAG); }
+function hatClown(id) {
+  const jetzt = Date.now();
+  const leute = [{ id: me || "ich", kaeufe }, ...mitglieder.filter((m) => m.id !== me)];
+  const ziel = leute.find((p) => p.id === id);
+  return leute.some((p) => (p.kaeufe || []).some((k) => k.id === "s-clown" && k.an === id && jetzt < k.ts + TAG && !schildAktiv(ziel?.kaeufe, k.ts)));
+}
+function kaufen(item, extra) {
+  if (spielgeld() < item.preis) { toast("Zu wenig Spielgeld"); return false; }
+  kaeufe.push({ ts: Date.now(), id: item.id, preis: item.preis, ...(extra || {}) });
+  if (item.typ === "titel" && !aktiv.titel) aktiv.titel = item.id;
+  if (item.typ === "farbe") aktiv.farbe = item.id;
+  speichern(); renderAll(); return true;
+}
+function renderShop() {
+  const box = $("#shopBox"); if (!box) return; box.replaceChildren();
+  const kh = h("div", "kontoline"); kh.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("small", null, "Verdien mehr, indem du im Tippschein mit Spielgeld richtig tippst."));
+  box.append(kh);
+  const gruppeTxt = { titel: ["Titel", "Steht in der Rangliste neben deinem Namen. Einer ist aktiv."], farbe: ["Namensfarbe", "So erscheint dein Name in der Rangliste."], joker: ["Joker", "Setzt du beim Platzieren einer Wette ein."], stich: ["Sticheln", "Nur in einer Gruppe."] };
+  ["titel", "farbe", "joker", "stich"].forEach((typ) => {
+    const sec = h("div", "shop-sec"); sec.append(h("h3", null, gruppeTxt[typ][0]), h("p", "sub", gruppeTxt[typ][1]));
+    SHOP.filter((x) => x.typ === typ || (typ === "stich" && x.typ === "schild")).forEach((it) => {
+      const row = h("div", "shop-row");
+      const l = h("div", "shop-l");
+      const nameEl = h("b", it.typ === "farbe" ? "nick nf-" + it.id : null, it.name);
+      l.append(nameEl); if (it.info) l.append(h("small", null, it.info));
+      const r = h("div", "shop-r");
+      if (it.typ === "titel" || it.typ === "farbe") {
+        const feld = it.typ;
+        if (besitzt(it.id)) {
+          const istAktiv = aktiv[feld] === it.id;
+          const b = h("button", "sbtn" + (istAktiv ? " on" : ""), istAktiv ? "Aktiv" : "Anlegen");
+          b.onclick = () => { aktiv[feld] = istAktiv ? null : it.id; speichern(); renderAll(); toast(istAktiv ? "Abgelegt" : "Angelegt"); };
+          r.append(b);
+        } else { const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis; b.onclick = () => { if (kaufen(it)) toast(it.name + " gekauft"); }; r.append(b); }
+      } else if (it.typ === "joker") {
+        const n = jokerUebrig(it.id); if (n > 0) r.append(h("small", "anz", n + " im Besitz"));
+        const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis; b.onclick = () => { if (kaufen(it)) toast(it.name + " gekauft"); }; r.append(b);
+      } else if (it.typ === "schild") {
+        const an = schildAktiv(kaeufe, Date.now()); if (an) r.append(h("small", "anz", "aktiv"));
+        const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis || an; b.onclick = () => { if (kaufen(it)) toast("Schutzschild aktiv für 24 Stunden"); }; r.append(b);
+      } else if (it.typ === "stich") {
+        const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
+        if (!andere.length) { r.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen" : "Nur in einer Gruppe")); }
+        else {
+          const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
+          const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis;
+          b.onclick = () => {
+            const ziel = andere.find((m) => m.id === sel.value); if (!ziel) return;
+            if (schildAktiv(ziel.kaeufe, Date.now())) { toast(ziel.nick + " hat ein Schutzschild"); return; }
+            if (kaufen(it, { an: ziel.id })) toast(ziel.nick + " trägt jetzt 24 Stunden einen Clown");
+          };
+          r.append(sel, b);
+        }
+      }
+      row.append(l, r); sec.append(row);
+    });
+    box.append(sec);
+  });
+  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben."));
+}
+
+function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
 if (!profil) openOnb(1);
 renderAll();
 initDb();
