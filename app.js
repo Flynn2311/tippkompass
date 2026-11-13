@@ -326,13 +326,16 @@ function tippKarte(g, e) {
   const match = h("div", "tk-match", g.h + " – " + g.a);
   const pick = h("div", "tk-pick");
   pick.append(h("span", "tk-what", "Tipp: " + label(g, e.k) + (e.k === "u" ? "" : " gewinnt")));
-  const nums = h("div", "tk-nums"); nums.append(h("b", null, num(o.q, 2)), h("span", null, "Quote"), h("b", null, pct(o.p)), h("span", null, "Chance"));
+  const nums = h("div", "tk-line");
+  const z1 = h("div"); z1.append(h("span", null, "Quote "), h("b", null, num(o.q, 2)), h("span", null, " · Chance "), h("b", null, pct(o.p)));
+  const z2 = h("div"); z2.append(h("span", null, "Fr. 10 → "), h("b", null, fr(10 * o.q)));
+  nums.append(z1, z2);
   const tip = TOPS.find((t) => t.id === g.id);
-  const btn = h("button", "tk-add" + (imSchein(g.id, e.k) ? " on" : ""), imSchein(g.id, e.k) ? "Im Tippschein ✓" : "In den Tippschein");
+  const btn = h("button", "tk-add" + (imSchein(g.id, e.k) ? " on" : ""), imSchein(g.id, e.k) ? "Im Tippschein ✓" : "+ Tippschein");
   btn.onclick = () => toggle(g.id, e.k);
-  el.append(top, when, match, pick, nums);
+  const unten = h("div", "tk-unten"); unten.append(nums, btn);
+  el.append(top, match, when, pick, unten);
   if (e.note || tip) el.append(h("p", "tk-note", e.note || tip.text));
-  el.append(btn);
   return el;
 }
 
@@ -364,27 +367,27 @@ function renderEmpfehlungen() {
     ...setzen.filter((x) => !x.e.auto && P(x) < 55),
   ].sort((a, b) => out(b.g, b.e.k).q - out(a.g, a.e.k).q);
   const STUFEN = {
-    sicher: { list: sicher, titel: "Sichere Tipps", sub: "Starke Favoriten ab 70 % Chance. Tiefe Quote, dafür geht es meistens auf." },
-    mittel: { list: mittel, titel: "Mittleres Risiko", sub: "55 bis 70 % Chance. Die Quote lohnt sich schon, und der Favorit gewinnt trotzdem meistens." },
-    riskant: { list: riskant, titel: "Riskante Tipps", sub: "Knappe Spiele um 50 %. Hohe Quote, aber fast ein Münzwurf. Nur mit kleinem Einsatz." },
+    sicher: { list: sicher, titel: "Sichere Tipps", sub: "Klare Favoriten. Du gewinnst wenig, aber meistens." },
+    mittel: { list: mittel, titel: "Mittleres Risiko", sub: "Mehr Gewinn, und der Favorit gewinnt trotzdem öfter als er verliert." },
+    riskant: { list: riskant, titel: "Riskante Tipps", sub: "Knappe Spiele, fast wie ein Münzwurf. Viel Gewinn, oft daneben." },
   };
   const st = STUFEN[risiko] || STUFEN.sicher;
   const list = st.list;
   $("#empTitle").textContent = st.titel;
   const erw = list.length ? list.reduce((t, x) => t + out(x.g, x.e.k).p, 0) / list.length : 0;
-  $("#empSub").textContent = st.sub + (list.length ? " Wer alle diese Tipps einzeln spielt, liegt im Schnitt bei etwa " + Math.round(erw) + " % Treffern." : "");
+  $("#empSub").textContent = st.sub + (list.length ? " Etwa " + Math.round(erw) + " von 100 solchen Tipps gehen auf." : "");
   const box = $("#emp"); box.replaceChildren();
   if (!list.length) box.append(h("div", "empty", sport === "tennis" && !SPIELE.some((g) => g.sport === "tennis") ? "Tennis-Tipps kommen mit den ATP Finals in Turin (15. bis 22. November). Diese Woche laufen nur kleine Turniere, dazu gibt es keine verlässlichen Daten." : "Gerade keine Tipps in dieser Stufe. Schau bei einer anderen Stufe."));
-  const max = mehrTipps ? list.length : 5;
+  const max = mehrTipps ? list.length : 3;
   list.slice(0, max).forEach(({ g, e }) => box.append(tippKarte(g, e)));
-  if (list.length > 5) { const m = h("button", "btn ghost", mehrTipps ? "Weniger anzeigen" : "Alle " + list.length + " Tipps anzeigen"); m.onclick = () => { mehrTipps = !mehrTipps; renderEmpfehlungen(); }; box.append(m); }
+  if (list.length > 3) { const m = h("button", "btn ghost", mehrTipps ? "Weniger anzeigen" : "Alle " + list.length + " Tipps anzeigen"); m.onclick = () => { mehrTipps = !mehrTipps; renderEmpfehlungen(); }; box.append(m); }
 
   // Kombi-Vorschlag passend zur gewählten Stufe
   const kb = $("#kombis"); kb.replaceChildren();
   const kombis = [];
-  if (risiko === "sicher" && sicher.length >= 2) kombis.push({ name: "Sichere Kombi", info: "Die stärksten Favoriten zusammen.", legs: sicher.slice(0, 3) });
-  if (risiko === "mittel" && mittel.length >= 2) kombis.push({ name: "Mittlere Kombi", info: "Drei Favoriten mit guter Quote.", legs: mittel.slice(0, 3) });
-  if (risiko === "riskant" && riskant.length >= 2) kombis.push({ name: "Riskante Kombi", info: "Zwei knappe Spiele. Hohe Quote, wenig Chance.", legs: riskant.slice(0, 2) });
+  if (sicher.length >= 2) kombis.push({ name: "Sichere Kombi", info: "Die stärksten Favoriten zusammen.", legs: sicher.slice(0, 3) });
+  if (mittel.length >= 2) kombis.push({ name: "Mittlere Kombi", info: "Drei Favoriten mit guter Quote.", legs: mittel.slice(0, 3) });
+  if (riskant.length >= 2) kombis.push({ name: "Riskante Kombi", info: "Zwei knappe Spiele. Viel Gewinn, wenig Chance.", legs: riskant.slice(0, 2) });
   $("#kombiWrap").hidden = !kombis.length;
   kombis.forEach((k) => kb.append(kombiEl(k)));
 
@@ -483,7 +486,14 @@ function renderBilanz() {
   BILANZ.forEach((b) => { const d = h("div", "h"); d.append(h("span", null, b.spiel + ": " + b.tipp + " (" + b.resultat + ")"), h("span", b.treffer ? "ok" : "no", b.treffer ? "Treffer" : "Daneben")); hb.append(d); });
 }
 
-function renderTipps() { renderRitual(); tippDerWoche(); renderTeam(); renderEmpfehlungen(); renderList(); renderBilanz(); }
+function renderGeldbar() {
+  const b = $("#geldbar"); if (!b) return; b.replaceChildren();
+  if (!profil) { b.hidden = true; return; } b.hidden = false;
+  const offeneW = [...solo, ...wetten].filter((w) => status(w) === "offen").length;
+  b.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("span", null, offeneW ? "· " + offeneW + (offeneW === 1 ? " Wette offen" : " Wetten offen") : "· keine Wette offen"), h("span", "gb-pfeil", "→"));
+  b.onclick = () => go("schein");
+}
+function renderTipps() { renderGeldbar(); tippDerWoche(); renderTeam(); renderEmpfehlungen(); renderList(); renderBilanz(); const nf = $("#finger").children.length; $("#fingerWrap").hidden = !nf; $("#fwToggle").textContent = "Finger weg: " + nf + (nf === 1 ? " Spiel ist" : " Spiele sind") + " zu offen"; }
 
 /* ================================================================
    Tippschein
@@ -683,6 +693,7 @@ function renderProfil() {
   box.append(ac);
   const info = h("div", "card");
   info.append(h("h3", null, "So nutzt du Tippkompass"));
+  const erk = h("button", "btn ghost", "Erklärung zum Tippen ansehen"); erk.onclick = () => { erklAusProfil = true; openOnb("erkl"); }; info.append(erk);
   const ol = h("ol", "steps");
   ["Schau dir an, worauf ich setzen würde und wovon ich die Finger lasse.", "Wähl oben, ob du sicher oder mutiger spielen willst.", "Kopier den Tipp oder die Kombi und setz selbst bei Sporttip, wenn du echtes Geld einsetzen willst.", "Oder tipp mit deinen Kollegen in einer Gruppe mit Startgeld."].forEach((t) => ol.append(h("li", null, t)));
   info.append(ol, h("p", "sub", "Tippkompass ist eine Tipp-Hilfe. In der App wird kein echtes Geld gesetzt. Nicht mit Swisslos verbunden."));
@@ -705,8 +716,12 @@ function showStep(n) {
   document.querySelectorAll(".step").forEach((s) => (s.hidden = s.dataset.step !== String(n)));
   const f = document.querySelector('.step[data-step="' + n + '"] input, .step[data-step="' + n + '"] button'); if (f) f.focus();
 }
+let erklAusProfil = false;
 let gruppeNachLogin = null;
-$("#s1next").onclick = () => showStep(me ? 2 : 0);
+$("#s1next").onclick = () => showStep("frage");
+$("#kenneJa").onclick = () => showStep(typeof me !== "undefined" && me ? 2 : (document.querySelector('.step[data-step="0"]') ? 0 : 2));
+$("#kenneNein").onclick = () => showStep("erkl");
+$("#erklOk").onclick = () => { if (erklAusProfil) { erklAusProfil = false; $("#onb").hidden = true; return; } $("#kenneJa").onclick(); };
 $("#s2next").onclick = () => { const n = $("#onbNick").value.trim(); if (!n) { $("#onbNick").focus(); return; } draft.nick = n.slice(0, 20); showStep(3); };
 $("#chTipps").onclick = () => finish(null);
 $("#chCreate").onclick = () => { if (!me) { gruppeNachLogin = 4; toast("Für Gruppen brauchst du ein Konto"); showStep(0); return; } showStep(4); };
@@ -858,7 +873,16 @@ document.querySelectorAll(".risk button").forEach((b) => {
 });
 const sw = $("#onlyClear"); sw.setAttribute("aria-pressed", String(onlyClear));
 sw.onclick = () => { onlyClear = !onlyClear; store.set("onlyClear", onlyClear); sw.setAttribute("aria-pressed", String(onlyClear)); renderList(); };
-$("#allToggle").onclick = () => { const o = $("#allToggle").getAttribute("aria-expanded") === "true"; $("#allToggle").setAttribute("aria-expanded", String(!o)); $("#allWrap").hidden = o; };
+let subTab = store.get("subTab", "einzel");
+function zeigeSub(t) {
+  subTab = t; store.set("subTab", t);
+  document.querySelectorAll(".subtabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.sub === t)));
+  ["einzel", "kombi", "alle"].forEach((x) => { $("#sub-" + x).hidden = x !== t; });
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll(".subtabs button").forEach((b) => (b.onclick = () => zeigeSub(b.dataset.sub)));
+zeigeSub(subTab);
+$("#fwToggle").onclick = () => { const o = $("#fwToggle").getAttribute("aria-expanded") === "true"; $("#fwToggle").setAttribute("aria-expanded", String(!o)); $("#finger").hidden = o; };
 function zeigeStand() { (function stale() { const hrs = (now - new Date(STAND)) / 36e5; if (hrs > 24) { const el = $("#stale"); el.hidden = false; el.textContent = "Die Tipps sind " + Math.floor(hrs / 24) + " Tag(e) alt. Bald kommt ein Update."; } })();
 $("#stand").textContent = "Stand: " + new Intl.DateTimeFormat("de-CH", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: tz }).format(new Date(STAND)); }
 zeigeStand();

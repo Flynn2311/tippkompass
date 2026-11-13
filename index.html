@@ -455,6 +455,28 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
 .jtags { display: flex; gap: .3rem; margin: .2rem 0; }
 .jtags small { font-size: .72rem; border: 1px solid var(--rasen); color: var(--rasen-dk); padding: 0 .3rem; border-radius: 2px; }
 .st.zurueck { color: var(--amber); }
+.geldbar { width: 100%; display: flex; align-items: baseline; flex-wrap: wrap; gap: .35rem; background: none; border: 0; border-bottom: 1px solid var(--line); padding: .1rem 0 .7rem; margin-bottom: .7rem; font: inherit; color: var(--soft); text-align: left; font-size: .92rem; cursor: pointer; }
+.geldbar b { color: var(--ink); font-family: var(--serif); font-size: 1.15rem; font-weight: 600; }
+.geldbar .gb-pfeil { margin-left: auto; color: var(--ink); font-weight: 700; }
+.subtabs { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--line); margin: .8rem 0 .5rem; }
+.subtabs button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .65rem .2rem; font: inherit; font-weight: 700; color: var(--soft); font-size: .98rem; }
+.subtabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--rasen); }
+.h2klein { font-size: 1.3rem !important; margin-top: 1rem !important; }
+.tk-line { font-size: .9rem; color: var(--soft); line-height: 1.5; }
+.tk-line b { color: var(--ink); font-weight: 700; }
+.tk-unten { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .4rem; }
+.tk-unten .tk-add { flex-shrink: 0; padding: .55rem .75rem; margin: 0; width: auto; font-size: .88rem; }
+.tk-match { font-size: 1.2rem !important; }
+.tk-note { font-size: .88rem; margin: .45rem 0 0; }
+.tk { padding: .8rem 0 .9rem !important; }
+#fingerWrap { margin-top: 1rem; }
+.kombi-erkl { margin-top: .8rem; }
+.kombi { margin-top: .9rem; }
+.erkl { list-style: none; counter-reset: e; padding: 0; margin: 1rem 0 1.4rem; }
+.erkl li { counter-increment: e; position: relative; padding: 0 0 1rem 2.4rem; }
+.erkl li::before { content: counter(e); position: absolute; left: 0; top: 0; width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--ink); color: #F3F2EF; display: grid; place-items: center; font-weight: 700; font-size: .9rem; }
+.erkl b { display: block; margin-bottom: .15rem; }
+.erkl span { color: var(--soft); font-size: .93rem; line-height: 1.45; }
 .google { display: flex; align-items: center; justify-content: center; gap: .6rem; background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line); }
 .oder { display: flex; align-items: center; gap: .7rem; color: var(--soft); font-size: .85rem; margin: 1rem 0 .4rem; }
 .oder::before, .oder::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -482,61 +504,62 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
   <div class="stale" id="stale" hidden></div>
 
   <section class="view" id="v-tipps">
+    <button class="geldbar" id="geldbar" hidden></button>
     <div class="sports" role="group" aria-label="Sportart">
       <button aria-pressed="true" data-sport="alle">Alle</button>
       <button aria-pressed="false" data-sport="fussball">Fussball</button>
       <button aria-pressed="false" data-sport="hockey">Eishockey</button>
       <button aria-pressed="false" data-sport="tennis">Tennis</button>
     </div>
-    <div class="risk" role="group" aria-label="Wie willst du spielen?">
-      <button data-r="sicher">Sicher<small>ab 70 % Chance</small></button>
-      <button data-r="mittel">Mittel<small>55 bis 70 %</small></button>
-      <button data-r="riskant">Riskant<small>um 50 %</small></button>
+    <div class="subtabs" role="tablist">
+      <button role="tab" data-sub="einzel">Tipps</button>
+      <button role="tab" data-sub="kombi">Kombis</button>
+      <button role="tab" data-sub="alle">Alle Spiele</button>
+    </div>
+    <div class="ritual" id="ritual" hidden></div>
+
+    <div id="sub-einzel">
+      <div class="risk" role="group" aria-label="Wie willst du spielen?">
+        <button data-r="sicher">Sicher<small>gewinnt meistens</small></button>
+        <button data-r="mittel">Mittel<small>mehr Gewinn</small></button>
+        <button data-r="riskant">Riskant<small>Glückssache</small></button>
+      </div>
+      <div id="teamBox" hidden></div>
+      <h2 id="empTitle" class="h2klein">Sichere Tipps</h2>
+      <p class="sub" id="empSub"></p>
+      <div id="emp"></div>
+      <div id="fingerWrap">
+        <button class="alltoggle" id="fwToggle" aria-expanded="false" aria-controls="finger">Finger weg</button>
+        <div id="finger" hidden></div>
+      </div>
+      <div class="tdw" id="tdw"></div>
+      <div id="histWrap" hidden>
+        <h2>Meine Bilanz</h2>
+        <p class="sub">So sind meine Tipps bisher ausgegangen.</p>
+        <div class="hist" id="hist"></div>
+      </div>
     </div>
 
-    <div class="ritual" id="ritual"></div>
-    <div class="tdw" id="tdw"></div>
-    <div id="teamBox" hidden></div>
-
-    <h2 id="empTitle">Sichere Tipps</h2>
-    <p class="sub" id="empSub"></p>
-    <div id="emp"></div>
-
-    <div id="kombiWrap">
-      <h2>Kombi-Vorschläge</h2>
-      <p class="sub">Zum Übernehmen oder für Sporttip kopieren.</p>
-      <div id="kombis"></div>
+    <div id="sub-kombi" hidden>
+      <p class="sub kombi-erkl">Bei einer Kombi müssen <b>alle</b> Tipps stimmen. Dafür werden die Quoten malgenommen, und du gewinnst viel mehr.</p>
+      <div id="kombiWrap"><div id="kombis"></div></div>
+      <div id="meineWrap" hidden>
+        <h2 class="h2klein">Meine Kombi</h2>
+        <div id="meine"></div>
+      </div>
+      <div id="glueckWrap" hidden>
+        <h2 class="h2klein">Für Glückspilze</h2>
+        <p class="sub">Ein Franken auf eine riesige Quote. Das ist wie Lotto: Meistens ist der Franken weg.</p>
+        <div id="glueck"></div>
+      </div>
     </div>
 
-    <div id="fingerWrap">
-      <h2>Finger weg</h2>
-      <p class="sub">Zu offen. Hier setze ich nicht.</p>
-      <div id="finger"></div>
-    </div>
-
-    <div id="meineWrap" hidden>
-      <h2>Meine Tipps</h2>
-      <p class="sub">Alles zusammen als eine Kombi. Hohe Quote, aber nur wenn jeder Tipp aufgeht.</p>
-      <div id="meine"></div>
-    </div>
-
-    <div id="glueckWrap" hidden>
-      <h2>Für Glückspilze</h2>
-      <p class="sub">Für einen Franken auf eine riesige Quote. Das ist Lotto, keine Strategie: Meistens ist der Franken weg.</p>
-      <div id="glueck"></div>
-    </div>
-
-    <div id="histWrap" hidden>
-      <h2>Meine Bilanz</h2>
-      <p class="sub">So sind meine Tipps bisher ausgegangen.</p>
-      <div class="hist" id="hist"></div>
-    </div>
-
-    <button class="alltoggle" id="allToggle" aria-expanded="false" aria-controls="allWrap">Alle Spiele und Quoten</button>
-    <div id="allWrap" hidden>
-      <p class="sub" style="margin-top:.8rem">Stell dir selbst etwas zusammen. Unter «Analyse» siehst du die Form der Teams.</p>
-      <div class="filterrow"><span id="countInfo"></span><button class="switch" id="onlyClear" aria-pressed="false"><i></i>Nur klare Favoriten</button></div>
-      <div id="list"></div>
+    <div id="sub-alle" hidden>
+      <div id="allWrap">
+        <p class="sub" style="margin-top:.6rem">Stell dir selbst etwas zusammen.</p>
+        <div class="filterrow"><span id="countInfo"></span><button class="switch" id="onlyClear" aria-pressed="false"><i></i>Nur klare Favoriten</button></div>
+        <div id="list"></div>
+      </div>
     </div>
   </section>
 
@@ -582,6 +605,23 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
       <h2>Willkommen!</h2>
       <p>Worauf ich setze, wovon ich die Finger lasse, und eine Tipprunde für dich und deine Kollegen.</p>
       <button class="btn" id="s1next">Los geht's</button>
+    </div>
+    <div class="step" data-step="frage" hidden>
+      <h2>Kennst du Sportwetten?</h2>
+      <p>Weisst du, was eine Quote und eine Kombi ist?</p>
+      <button class="choice" id="kenneJa"><b>Ja, kenne ich</b><span>Direkt weiter</span></button>
+      <button class="choice" id="kenneNein"><b>Nein, erklär es mir</b><span>Dauert eine Minute</span></button>
+    </div>
+    <div class="step" data-step="erkl" hidden>
+      <h2>So funktioniert Tippen</h2>
+      <ol class="erkl">
+        <li><b>Du tippst, wer gewinnt.</b><span>Zum Beispiel: Bayern gewinnt gegen Köln. Bei Fussball geht auch Unentschieden.</span></li>
+        <li><b>Die Quote sagt, wie viel du gewinnst.</b><span>Quote 2.00 heisst: Aus Fr. 10 werden Fr. 20. Quote 1.20 heisst: Aus Fr. 10 werden Fr. 12. Kleine Quote = sicherer, aber weniger Gewinn.</span></li>
+        <li><b>Eine Kombi sind mehrere Tipps zusammen.</b><span>Alle müssen stimmen, sonst ist der Einsatz weg. Dafür wird die Quote viel grösser.</span></li>
+        <li><b>Sicher, Mittel oder Riskant?</b><span>Sicher gewinnt meistens, aber wenig. Riskant bringt viel, geht aber oft daneben.</span></li>
+        <li><b>Hier spielst du nur mit Spielgeld.</b><span>Du startest mit Fr. 1'000 Spielgeld. Echtes Geld wird in dieser App nie gesetzt.</span></li>
+      </ol>
+      <button class="btn" id="erklOk">Verstanden</button>
     </div>
     <div class="step" data-step="0" hidden>
       <h2>Konto</h2>
