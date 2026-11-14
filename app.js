@@ -132,6 +132,7 @@ let solo = store.get("solo", []);            // eigene Spielgeld-Wetten ohne Gru
 let konto_ziel = store.get("konto_ziel", "solo");
 let kaeufe = store.get("kaeufe", []);         // Shop-Käufe [{ts, id, preis, an?}]
 let aktiv = store.get("aktiv", { titel: null, farbe: null });
+let xpBank = store.get("xpBank", 0); let design = store.get("design", "zeitung");
 let resetTs = store.get("resetTs", 0);        // Spielgeld-Neustart: ältere Käufe zählen nicht mehr // "solo" | "gruppe"  // für Sporttip kopierte Tipps [{ts, picks:[{g,k,q}]}]
 let db = null, me = null, isOwner = false, authUser = null, fb = null;
 const OWNER_EMAILS = []; // hier deine E-Mail eintragen, damit du «Setzen/Finger weg» markieren kannst
@@ -501,7 +502,7 @@ function renderGeldbar() {
   const b = $("#geldbar"); if (!b) return; b.replaceChildren();
   if (!profil) { b.hidden = true; return; } b.hidden = false;
   const offeneW = [...solo, ...wetten].filter((w) => status(w) === "offen").length;
-  b.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("span", null, offeneW ? "· " + offeneW + (offeneW === 1 ? " Wette offen" : " Wetten offen") : "· keine Wette offen"), h("span", "gb-pfeil", "→"));
+  b.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("span", null, offeneW ? "· " + offeneW + (offeneW === 1 ? " Wette offen" : " Wetten offen") : "· keine Wette offen"), h("span", null, "· Stufe " + lvl().n), h("span", "gb-pfeil", "→"));
   b.onclick = () => go("schein");
 }
 function sportKnoepfe() {
@@ -600,7 +601,7 @@ function renderSchein() {
   form.append(lab, inp, gew);
   if (jk.children.length) form.append(jk);
   form.append(btn);
-  if (!zielGruppe && frei < 1 && !k.offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
+  if (!zielGruppe && frei < 1 && !k.offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { xpBank += gewinnPlus(solo); solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
   const nur = h("button", "btn ghost", "Nur tippen, ohne Einsatz"); nur.style.marginTop = ".5rem";
   nur.onclick = async () => {
     const srv = await serverZeit(); if (!srv) { toast("Keine Verbindung. Tippen geht nur mit Internet."); return; }
@@ -737,6 +738,7 @@ function renderGruppe() {
 function renderProfil() {
   const box = $("#profilBox"); box.replaceChildren();
   if (!profil) return;
+  { const sb = $("#stufeBox"); if (sb) sb.replaceChildren(stufeCard()); const eb = $("#erfolgeBox"); if (eb) eb.replaceChildren(erfolgeCard()); }
   const c = h("div", "card"); c.append(h("h3", null, "Name und Lieblingsteam"));
   const f = h("div", "field"); const l = h("label", null, "Spielername"); l.htmlFor = "nick"; const i = h("input"); i.id = "nick"; i.value = profil.nick; i.maxLength = 20;
   i.onchange = () => { profil.nick = i.value.trim().slice(0, 20) || profil.nick; speichern(); renderGruppe(); };
@@ -780,7 +782,7 @@ function renderProfil() {
   const a = h("a", null, "sos-spielsucht.ch"); a.href = "https://www.sos-spielsucht.ch"; help.append(a, ".");
   box.append(help);
   const reset = h("button", "x", "Alles zurücksetzen"); reset.style.marginTop = "1rem";
-  reset.onclick = () => { if (reset.dataset.ok) { profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; schein = []; gruppe = null; speichern(); openOnb(1); renderAll(); } else { reset.dataset.ok = "1"; reset.textContent = "Wirklich alles löschen? Nochmals tippen."; } };
+  reset.onclick = () => { if (reset.dataset.ok) { profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; schein = []; gruppe = null; speichern(); applyDesign(); openOnb(1); renderAll(); } else { reset.dataset.ok = "1"; reset.textContent = "Wirklich alles löschen? Nochmals tippen."; } };
   box.append(reset);
 }
 
@@ -870,10 +872,10 @@ function finish(code) {
    Datenbank: Gruppe und eigene Tipps teilen
    ================================================================ */
 let syncT;
-function speichern() { store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("konto_ziel", konto_ziel); store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs); store.set("risiko", risiko); clearTimeout(syncT); syncT = setTimeout(sync, 500); }
+function speichern() { store.set("xpBank", xpBank); store.set("design", design); store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("konto_ziel", konto_ziel); store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs); store.set("risiko", risiko); clearTimeout(syncT); syncT = setTimeout(sync, 500); }
 async function sync() {
   if (!db || !me || !profil) return;
-  try { await db.doc("players/" + me).set({ nick: profil.nick, gruppe: profil.gruppe || null, wetten, votes, team, gespielt, solo, kaeufe, aktiv, resetTs, at: Date.now() }); } catch (e) { console.warn(e); }
+  try { await db.doc("players/" + me).set({ nick: profil.nick, gruppe: profil.gruppe || null, wetten, votes, team, gespielt, solo, kaeufe, aktiv, resetTs, xpBank, design, at: Date.now() }); } catch (e) { console.warn(e); }
 }
 async function setFlynn(id, val) {
   if (val) flynn[id] = val; else delete flynn[id];
@@ -882,8 +884,8 @@ async function setFlynn(id, val) {
 }
 // Nach dem Abmelden: nichts vom Konto auf dem Gerät lassen
 function geraetLeeren() {
-  profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; votes = {}; team = ""; schein = []; gruppe = null; mitglieder = [];
-  ["profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
+  profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; votes = {}; team = ""; schein = []; gruppe = null; mitglieder = []; applyDesign();
+  ["xpBank", "design", "profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
   try { Object.keys(localStorage).filter((k) => k.includes("gruppe_")).forEach((k) => localStorage.removeItem(k)); } catch {}
   renderAll(); go("tipps"); openOnb(1);
 }
@@ -898,6 +900,9 @@ function wiederherstellen(x) {
   if (Array.isArray(x.kaeufe)) kaeufe = x.kaeufe;
   if (x.aktiv) aktiv = x.aktiv;
   if (typeof x.resetTs === "number") resetTs = x.resetTs;
+  if (typeof x.xpBank === "number") xpBank = x.xpBank;
+  if (typeof x.design === "string") design = x.design;
+  store.set("xpBank", xpBank); store.set("design", design); applyDesign();
   store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs);
   store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("gespielt", gespielt); store.set("votes", votes); store.set("team", team);
   return !!x.nick;
@@ -1064,6 +1069,67 @@ const SHOP = [
   { id: "s-schild", typ: "schild", name: "Schutzschild", preis: 60, info: "24 Stunden kann dir niemand einen Clown verpassen." },
 ];
 const TAG = 864e5;
+/* ================= Stufen, Designs, Errungenschaften ================= */
+const STUFEN = [{ n: 1, t: "Rookie", ab: 0 }, { n: 2, t: "Tipper", ab: 100 }, { n: 3, t: "Stammtipper", ab: 300 }, { n: 4, t: "Profi", ab: 700 }, { n: 5, t: "Legende", ab: 1500 }];
+const DESIGNS = [
+  { id: "zeitung", n: "Zeitung", st: 1, bg: "#F3F2EF", ac: "#B8612F", tc: "#14161A" },
+  { id: "dunkel", n: "Dunkel", st: 1, bg: "#14161A", ac: "#D9783F", tc: "#14161A" },
+  { id: "minze", n: "Minze", st: 2, bg: "#EAF7F3", ac: "#0E8C77", tc: "#103A33" },
+  { id: "sw", n: "Schwarz-Weiss", st: 3, bg: "#FFFFFF", ac: "#000000", tc: "#000000" },
+  { id: "sonne", n: "Sonnen\u00aduntergang", st: 4, bg: "#2A1A17", ac: "#E8692B", tc: "#2A1A17" },
+  { id: "neon", n: "Neon-Arena", st: 5, bg: "#000000", ac: "#B6FF3B", tc: "#000000" },
+];
+function gewinnPlus(list) { return (list || []).reduce((t, w) => (status(w) === "gewonnen" ? t + Math.max(0, w.einsatz * wQuote(w) - w.einsatz) : t), 0); }
+function erspielt() { return xpBank + gewinnPlus(solo) + gewinnPlus(wetten); }
+function lvl() { const x = erspielt(); let s = STUFEN[0]; STUFEN.forEach((v) => { if (x >= v.ab) s = v; }); return s; }
+function applyDesign() {
+  let d = DESIGNS.find((x) => x.id === design) || DESIGNS[0];
+  if (d.st > lvl().n) d = DESIGNS[0];
+  document.documentElement.dataset.design = d.id;
+  const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = d.bg;
+}
+function erfolge() {
+  const all = [...wetten, ...solo], ps = picksAus(all), richtig = ps.filter((p) => p.ok);
+  const ab = abzeichen(all).map((a) => ({ t: a.t, d: a.d, ok: a.ok }));
+  const x = erspielt(), n = ps.length;
+  return ab.concat([
+    { t: "Erste Wette", d: "Deine erste Wette mit Spielgeld gesetzt", ok: all.length >= 1 },
+    { t: "5er-Serie", d: "Fünf Tipps hintereinander richtig", ok: maxSerie(ps) >= 5 },
+    { t: "25 Treffer", d: "Fünfundzwanzig Tipps richtig", ok: richtig.length >= 25 },
+    { t: "Erste Fr. 100", d: "Insgesamt Fr. 100 Gewinn erspielt", ok: x >= 100 },
+    { t: "Fr. 500 erspielt", d: "Insgesamt Fr. 500 Gewinn erspielt", ok: x >= 500 },
+    { t: "Gruppen-Spieler", d: "Einer Gruppe beigetreten", ok: !!(profil && profil.gruppe) },
+    { t: "Shopper", d: "Etwas im Shop gekauft", ok: kaeufe.length >= 1 },
+    { t: "Stilbewusst", d: "Ein anderes Design gewählt", ok: design !== "zeitung" },
+    { t: "Treffsicher", d: "Mindestens 60 % richtig bei 10 oder mehr Tipps", ok: n >= 10 && richtig.length / n >= 0.6 },
+  ]);
+}
+function stufeCard() {
+  const c = h("div", "card"); const L = lvl(), nxt = STUFEN.find((s) => s.n === L.n + 1), x = erspielt();
+  const top = h("div", "lvl-top"); top.append(h("b", null, "Stufe " + L.n + " · " + L.t), h("span", "sub", fr(x) + " erspielt")); top.firstChild.nextSibling.style.margin = "0";
+  const bar = h("div", "lvbar"); const i = h("i"); const pr = nxt ? Math.max(4, Math.min(100, (x - L.ab) / (nxt.ab - L.ab) * 100)) : 100; i.style.width = pr + "%"; bar.append(i);
+  c.append(top, bar, h("p", "sub", nxt ? "Noch " + fr(nxt.ab - x) + " Gewinn bis Stufe " + nxt.n + " (" + nxt.t + ")." : "Höchste Stufe erreicht."));
+  c.append(h("h3", null, "Designs")); c.firstChild;
+  const g = h("div", "dz");
+  DESIGNS.forEach((d) => {
+    const frei = d.st <= L.n; const b = h("button", frei ? "" : "lock"); b.setAttribute("aria-pressed", String(frei && design === d.id));
+    const sw = h("span", "sw"); sw.style.background = d.bg; sw.style.borderColor = d.ac;
+    const t = h("span"); t.append(h("b", null, d.n), h("small", null, !frei ? "Ab Stufe " + d.st : design === d.id ? "Aktiv" : d.st === 1 ? "Gratis" : "Freigeschaltet"));
+    b.append(sw, t);
+    b.onclick = () => { if (!frei) { toast("Dieses Design gibt es ab Stufe " + d.st + "."); return; } design = d.id; speichern(); applyDesign(); renderAll(); };
+    g.append(b);
+  });
+  c.append(g); return c;
+}
+function erfolgeCard() {
+  const e = erfolge(), ok = e.filter((a) => a.ok).length;
+  const c = h("div", "card"); c.append(h("h3", null, "Errungenschaften: " + ok + " von " + e.length));
+  const l = h("div", "erf");
+  e.forEach((a) => { const d = h("div", a.ok ? "ok" : ""); const ic = h("span", "ic", a.ok ? "✓" : "–"); const t = h("span"); t.append(h("b", null, a.t), h("small", null, a.d)); d.append(ic, t); l.append(d); });
+  c.append(l); return c;
+}
+applyDesign();
+
 const shopItem = (id) => SHOP.find((x) => x.id === id);
 function ausgaben() { return kaeufe.filter((k) => k.ts > resetTs).reduce((t, k) => t + k.preis, 0); }
 function spielgeld() { return konto(solo, SOLO_START).stand - ausgaben(); }
