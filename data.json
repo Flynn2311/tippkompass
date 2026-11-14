@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-14T18:32:00+01:00",
+ "STAND": "2026-11-14T18:33:00+01:00",
  "SPIELE": [
   {
    "id": "n1",
@@ -1204,83 +1204,6 @@
   },
   {
    "d": "2026-11-13",
-   "h": "Vegas Golden Knights",
-   "a": "Nashville Predators",
-   "hs": 2,
-   "as": 3
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Boston Bruins",
-   "a": "Montreal Canadiens",
-   "hs": 2,
-   "as": 5
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Toronto Maple Leafs",
-   "a": "Minnesota Wild",
-   "hs": 2,
-   "as": 5
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Ottawa Senators",
-   "a": "Colorado Avalanche",
-   "hs": 4,
-   "as": 3
-  },
-  {
-   "d": "2026-11-13",
-   "h": "New Jersey Devils",
-   "a": "Washington Capitals",
-   "hs": 5,
-   "as": 2
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Columbus Blue Jackets",
-   "a": "Tampa Bay Lightning",
-   "hs": 1,
-   "as": 3
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Florida Panthers",
-   "a": "Detroit Red Wings",
-   "hs": 5,
-   "as": 4
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Chicago Blackhawks",
-   "a": "Buffalo Sabres",
-   "hs": 3,
-   "as": 2
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Dallas Stars",
-   "a": "Winnipeg Jets",
-   "hs": 3,
-   "as": 8
-  },
-  {
-   "d": "2026-11-13",
-   "h": "Utah Mammoth",
-   "a": "St. Louis Blues",
-   "hs": 0,
-   "as": 1
-  },
-  {
-   "d": "2026-11-14",
-   "h": "Vancouver Canucks",
-   "a": "New York Rangers",
-   "hs": 1,
-   "as": 5
-  },
-  {
-   "d": "2026-11-14",
    "h": "Vegas Golden Knights",
    "a": "Nashville Predators",
    "hs": 2,
