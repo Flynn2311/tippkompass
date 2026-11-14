@@ -967,7 +967,7 @@ document.querySelectorAll(".risk button").forEach((b) => {
 });
 const sw = $("#onlyClear"); sw.setAttribute("aria-pressed", String(onlyClear));
 sw.onclick = () => { onlyClear = !onlyClear; store.set("onlyClear", onlyClear); sw.setAttribute("aria-pressed", String(onlyClear)); renderList(); };
-let subTab = store.get("subTab", "einzel");
+let subTab = store.get("subTab", "einzel"); if (subTab === "alle") subTab = "einzel";
 function zeigeSub(t) {
   subTab = t; store.set("subTab", t);
   document.querySelectorAll(".subtabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.sub === t)));
