@@ -100,8 +100,7 @@ async function espn(pfad, von, bis) {
   const basis = `https://site.api.espn.com/apis/site/v2/sports/${pfad}/scoreboard`;
   const mock = "espn_" + pfad.replace("/", "_");
   if (MOCK) return holen(basis, mock);
-  let r = await holen(`${basis}?dates=${ymd(von)}-${ymd(bis)}`, mock);
-  if (r) return r;
+  let r;
   const events = [];
   for (let t = new Date(von); t <= bis; t = new Date(t.getTime() + D)) {
     const x = await holen(`${basis}?dates=${ymd(t)}`, mock);
@@ -134,7 +133,8 @@ async function resultate() {
       if (g && !g.res) { g.res = res; neu++; }
       const tag = (ev.date || c.date || "").slice(0, 10);
       if (L.liga !== "NHL" || g) {
-        if (!d.RESULTATE.some((x) => x.d === tag && x.h === H_ && x.a === A_)) d.RESULTATE.push({ d: tag, h: H_, a: A_, hs, as });
+        const nah = (x) => Math.abs(new Date(x.d) - new Date(tag)) <= D;
+        if (!d.RESULTATE.some((x) => x.h === H_ && x.a === A_ && nah(x))) d.RESULTATE.push({ d: tag, h: H_, a: A_, hs, as });
       }
     }
     if (neu) log.push(`${L.liga}: ${neu} Resultat(e) eingetragen`);
@@ -209,7 +209,8 @@ async function quoten() {
 function aufraeumen() {
   d.SPIELE = d.SPIELE.filter((g) => g.id === d.TIPP_DER_WOCHE || new Date(g.zeit) > now - 7 * D);
   const grenze = ymd(new Date(now - 30 * D));
-  d.RESULTATE = d.RESULTATE.filter((r) => r.d.replace(/-/g, "") >= grenze).sort((a, b) => a.d.localeCompare(b.d));
+  d.RESULTATE = d.RESULTATE.filter((r) => r.d.replace(/-/g, "") >= grenze).sort((a, b) => a.d.localeCompare(b.d))
+    .filter((r, i, arr) => !arr.slice(0, i).some((x) => x.h === r.h && x.a === r.a && Math.abs(new Date(x.d) - new Date(r.d)) <= D));
   const ids = new Set(d.SPIELE.map((g) => g.id));
   const offen = (g) => !g.res && new Date(g.zeit) > now;
   d.TOPS = (d.TOPS || []).filter((t) => ids.has(t.id) && offen(d.SPIELE.find((g) => g.id === t.id)));
