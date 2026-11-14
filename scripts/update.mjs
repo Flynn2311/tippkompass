@@ -17,6 +17,8 @@ const LIGEN = [
   { liga: "Champions League", odds: "soccer_uefa_champs_league", espn: "soccer/uefa.champions" },
 ];
 const NUR_RESULTATE = [{ liga: "NHL", espn: "hockey/nhl" }]; // alte NHL-Spiele noch abrechnen
+// Tennis: nur grosse ATP-Turniere, wenn gerade eins läuft
+const TENNIS_RANG = [/finals/i, /aus.*open|australian/i, /french|roland/i, /wimbledon/i, /us_open|us open/i, /indian_wells|miami|monte|madrid|italian|rome|canad|cincinnati|shanghai|paris/i];
 
 // Anzeigenamen wie bisher in der App
 const NAMEN = {
@@ -96,6 +98,7 @@ const log = [];
 async function resultate() {
   const von = new Date(now.getTime() - 3 * D), bis = new Date(now.getTime() + D);
   for (const L of [...LIGEN, ...NUR_RESULTATE]) {
+    if (L.liga === "NHL" && !d.SPIELE.some((g) => g.liga === "NHL" && !g.res)) continue;
     const r = await holen(`https://site.api.espn.com/apis/site/v2/sports/${L.espn}/scoreboard?dates=${ymd(von)}-${ymd(bis)}&limit=200`, "espn_" + L.espn.replace("/", "_"));
     if (!r) { log.push(`Resultate ${L.liga}: nicht erreichbar`); continue; }
     let neu = 0;
@@ -119,6 +122,23 @@ async function resultate() {
     }
     if (neu) log.push(`${L.liga}: ${neu} Resultat(e) eingetragen`);
   }
+  // Tennis
+  const offeneT = d.SPIELE.filter((g) => g.sport === "tennis" && !g.res && new Date(g.zeit) < now);
+  if (!offeneT.length) return;
+  const r = await holen(`https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard?dates=${ymd(von)}-${ymd(bis)}`, "espn_tennis_atp");
+  if (!r) { log.push("Resultate Tennis: nicht erreichbar"); return; }
+  const comps = []; (function such(o) { if (!o || typeof o !== "object") return; if (Array.isArray(o)) return o.forEach(such); if (Array.isArray(o.competitors) && o.competitors.length === 2) comps.push(o); for (const k of Object.keys(o)) if (k !== "competitors" && typeof o[k] === "object") such(o[k]); })(r.data.events || []);
+  let neu = 0;
+  for (const c of comps) {
+    if (!(c.status?.type?.completed)) continue;
+    const [x, y] = c.competitors; const nx = x.athlete?.displayName || x.team?.displayName || x.displayName, ny = y.athlete?.displayName || y.team?.displayName || y.displayName;
+    if (!nx || !ny || (x.winner !== true && y.winner !== true)) continue;
+    const sieger = x.winner === true ? nx : ny;
+    const g = finde(offeneT, nx, ny, c.date || c.startDate || now, 30) || finde(offeneT, ny, nx, c.date || c.startDate || now, 30);
+    if (!g || g.res) continue;
+    g.res = aehnlich(g.h, sieger) >= aehnlich(g.a, sieger) ? "h" : "a"; neu++;
+  }
+  if (neu) log.push(`Tennis: ${neu} Resultat(e) eingetragen`);
 }
 
 // ---------- 2) Quoten (The Odds API) ----------
@@ -129,12 +149,20 @@ async function quoten() {
   if (!KEY) { log.push("Quoten: kein ODDS_API_KEY gesetzt, übersprungen"); return; }
   if (!FORCE && !(seit >= 4 && h >= 8 && h <= 21)) return;
   let ok = false;
-  for (const L of LIGEN) {
+  const ligen = [...LIGEN];
+  const sp = await holen(`https://api.the-odds-api.com/v4/sports/?apiKey=${KEY}`, "odds_sports"); // kostet keine Credits
+  if (sp && Array.isArray(sp.data)) {
+    const atp = sp.data.filter((x) => x.active && /^tennis_atp/.test(x.key) && !x.has_outrights && !/doubles/i.test(x.key + x.title));
+    const rang = (x) => { const i = TENNIS_RANG.findIndex((re) => re.test(x.key + " " + x.title)); return i < 0 ? 99 : i; };
+    atp.sort((a, b) => rang(a) - rang(b));
+    if (atp[0] && rang(atp[0]) < 99) { ligen.push({ liga: atp[0].title.replace(/^ATP\s*/i, "ATP "), odds: atp[0].key, tennis: true }); log.push("Tennis-Turnier: " + atp[0].title); }
+  }
+  for (const L of ligen) {
     const r = await holen(`https://api.the-odds-api.com/v4/sports/${L.odds}/odds?apiKey=${KEY}&regions=eu&markets=h2h&oddsFormat=decimal&dateFormat=iso`, "odds_" + L.odds);
     if (!r) { log.push(`Quoten ${L.liga}: Fehler`); continue; }
     ok = true;
     const rem = r.headers.get?.("x-requests-remaining"); if (rem != null) rest = Number(rem);
-    const kommende = (r.data || []).filter((e) => { const t = new Date(e.commence_time); return t > now && t - now < 10 * D; })
+    const kommende = (Array.isArray(r.data) ? r.data : []).filter((e) => { const t = new Date(e.commence_time); return t > now && t - now < 10 * D; })
       .sort((a, b) => a.commence_time.localeCompare(b.commence_time)).slice(0, 12);
     for (const e of kommende) {
       // Durchschnitt aller Anbieter, Marge herausrechnen
@@ -142,17 +170,18 @@ async function quoten() {
       for (const b of e.bookmakers || []) {
         const m = (b.markets || []).find((x) => x.key === "h2h"); if (!m) continue;
         const o = {}; for (const x of m.outcomes) { if (x.name === e.home_team) o.h = x.price; else if (x.name === e.away_team) o.a = x.price; else if (/draw/i.test(x.name)) o.u = x.price; }
-        if (!o.h || !o.a || !o.u) continue;
-        const inv = { h: 1 / o.h, u: 1 / o.u, a: 1 / o.a }, t = inv.h + inv.u + inv.a;
+        if (!o.h || !o.a || (!L.tennis && !o.u)) continue;
+        const inv = { h: 1 / o.h, u: L.tennis ? 0 : 1 / o.u, a: 1 / o.a }, t = inv.h + inv.u + inv.a;
         sum.h += inv.h / t; sum.u += inv.u / t; sum.a += inv.a / t; n++;
       }
       if (!n) continue;
-      let p = { h: +(sum.h / n * 100).toFixed(1), u: +(sum.u / n * 100).toFixed(1) };
-      p.a = +(100 - p.h - p.u).toFixed(1);
+      let p = { h: +(sum.h / n * 100).toFixed(1) };
+      if (!L.tennis) p.u = +(sum.u / n * 100).toFixed(1);
+      p.a = +(100 - p.h - (p.u || 0)).toFixed(1);
       const id = "o" + e.id.slice(0, 10);
-      let g = d.SPIELE.find((x) => x.id === id) || finde(d.SPIELE.filter((x) => x.liga === L.liga), e.home_team, e.away_team, e.commence_time, 3);
+      let g = d.SPIELE.find((x) => x.id === id) || (L.tennis ? null : finde(d.SPIELE.filter((x) => x.liga === L.liga), e.home_team, e.away_team, e.commence_time, 3));
       if (g) { if (!g.res && new Date(g.zeit) > now) { g.p = p; g.zeit = new Date(e.commence_time).toISOString().replace(".000", ""); aktualisiert++; } }
-      else { d.SPIELE.push({ id, sport: "fussball", liga: L.liga, zeit: new Date(e.commence_time).toISOString().replace(".000", ""), h: anzeige(e.home_team), a: anzeige(e.away_team), p }); neueSpiele++; }
+      else { d.SPIELE.push({ id, sport: L.tennis ? "tennis" : "fussball", liga: L.liga, zeit: new Date(e.commence_time).toISOString().replace(".000", ""), h: anzeige(e.home_team), a: anzeige(e.away_team), p }); neueSpiele++; }
     }
   }
   if (ok) d.ODDS_AT = now.toISOString();
@@ -168,7 +197,7 @@ function aufraeumen() {
   const offen = (g) => !g.res && new Date(g.zeit) > now;
   d.TOPS = (d.TOPS || []).filter((t) => ids.has(t.id) && offen(d.SPIELE.find((g) => g.id === t.id)));
   const fav = (g) => { const k = ["h", "u", "a"].filter((x) => g.p[x] != null).sort((x, y) => g.p[y] - g.p[x])[0]; return { k, p: g.p[k] }; };
-  const kand = d.SPIELE.filter((g) => offen(g) && g.sport === "fussball" && !d.TOPS.some((t) => t.id === g.id))
+  const kand = d.SPIELE.filter((g) => offen(g) && g.sport !== "hockey" && !d.TOPS.some((t) => t.id === g.id))
     .map((g) => ({ g, f: fav(g) })).filter((x) => x.f.k !== "u" && x.f.p >= 60).sort((a, b) => b.f.p - a.f.p);
   for (const { g, f } of kand) {
     if (d.TOPS.length >= 6) break;
@@ -179,7 +208,8 @@ function aufraeumen() {
     const gs = gl.filter((r) => (r.h === geg ? r.hs > r.as : r.as > r.hs)).length;
     let text = letzte.length ? `${team} hat ${siege} der letzten ${letzte.length} Spiele gewonnen` : `${team} ist laut den Wettanbietern klarer Favorit`;
     if (gl.length) text += `, ${geg} nur ${gs} von ${gl.length}`;
-    text += f.k === "h" ? ". Dazu der Heimvorteil." : ". Ich setze trotzdem auf den Auswärtssieg.";
+    if (g.sport === "tennis") text = `${team} ist laut den Wettanbietern klarer Favorit gegen ${geg}. Im Tennis gibt es aber keinen Unentschieden-Puffer: Ein schlechter Tag reicht.`;
+    else text += f.k === "h" ? ". Dazu der Heimvorteil." : ". Ich setze trotzdem auf den Auswärtssieg.";
     d.TOPS.push({ id: g.id, wahl: f.k, text });
   }
   const tdw = d.SPIELE.find((g) => g.id === d.TIPP_DER_WOCHE);

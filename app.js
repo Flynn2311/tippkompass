@@ -332,7 +332,7 @@ function tippKarte(g, e) {
   const el = h("article", "tk");
   const top = h("div", "tk-top");
   const links = h("span", "tk-meta"); links.append(h("span", "src " + (e.auto ? "auto" : "own"), e.auto ? "Statistik" : "Mein Tipp"), h("span", "stufe " + st.c, st.t));
-  top.append(links, h("b", "tk-ort", e.k === "h" ? "Heimspiel" : e.k === "a" ? "Auswärts" : "Unentschieden"));
+  top.append(links, h("b", "tk-ort", g.sport === "tennis" ? g.liga : e.k === "h" ? "Heimspiel" : e.k === "a" ? "Auswärts" : "Unentschieden"));
   const when = h("div", "tk-when", g.liga + " · " + fmtShort.format(new Date(g.zeit)) + ", " + fmtTime.format(new Date(g.zeit)));
   const match = h("div", "tk-match", g.h + " – " + g.a);
   const pick = h("div", "tk-pick");
@@ -388,7 +388,7 @@ function renderEmpfehlungen() {
   const erw = list.length ? list.reduce((t, x) => t + out(x.g, x.e.k).p, 0) / list.length : 0;
   $("#empSub").textContent = st.sub + (list.length ? " Etwa " + Math.round(erw) + " von 100 solchen Tipps gehen auf." : "");
   const box = $("#emp"); box.replaceChildren();
-  if (!list.length) box.append(h("div", "empty", sport === "tennis" && !SPIELE.some((g) => g.sport === "tennis") ? "Tennis-Tipps kommen mit den ATP Finals in Turin (15. bis 22. November). Diese Woche laufen nur kleine Turniere, dazu gibt es keine verlässlichen Daten." : "Gerade keine Tipps in dieser Stufe. Schau bei einer anderen Stufe."));
+  if (!list.length) box.append(h("div", "empty", sport === "tennis" && !SPIELE.some((g) => g.sport === "tennis" && offen(g)) ? "Gerade läuft kein grosses Tennisturnier. Sobald eines startet, zum Beispiel ein Grand Slam oder die ATP Finals, erscheinen die Tipps hier automatisch." : "Gerade keine Tipps in dieser Stufe. Schau bei einer anderen Stufe."));
   const max = mehrTipps ? list.length : 3;
   list.slice(0, max).forEach(({ g, e }) => box.append(tippKarte(g, e)));
   if (list.length > 3) { const m = h("button", "btn ghost", mehrTipps ? "Weniger anzeigen" : "Alle " + list.length + " Tipps anzeigen"); m.onclick = () => { mehrTipps = !mehrTipps; renderEmpfehlungen(); }; box.append(m); }
@@ -478,14 +478,14 @@ function gameCard(g) {
 function renderList() {
   const box = $("#list"); box.replaceChildren();
   $("#onlyClear").parentElement.hidden = sport === "tennis";
-  if (sport === "tennis") { box.append(h("div", "empty", "Für Tennis habe ich gerade keine Prognosen. Diese Woche laufen nur kleinere Turniere. Sobald grosse Turniere anstehen, ergänze ich sie.")); return; }
+  if (sport === "tennis" && !SPIELE.some((g) => g.sport === "tennis" && offen(g))) { $("#countInfo").textContent = ""; box.append(h("div", "empty", "Gerade läuft kein grosses Tennisturnier. Sobald eines startet, zum Beispiel ein Grand Slam oder die ATP Finals, erscheinen die Tipps hier automatisch.")); return; }
   let list = SPIELE.filter(passt).sort((a, b) => new Date(a.zeit) - new Date(b.zeit));
   const total = list.length;
   if (onlyClear) list = list.filter((g) => bestOf(g).p >= 60);
   $("#countInfo").textContent = list.length + (onlyClear ? " von " + total : "") + " Spiele";
   let day = "";
   list.forEach((g) => { const d = fmtDay.format(new Date(g.zeit)); if (d !== day) { day = d; box.append(h("div", "day", d)); } box.append(gameCard(g)); });
-  if (sport !== "fussball") { const w = h("div", "warn"); w.style.marginTop = "1rem"; w.append(h("b", null, "Achtung bei Eishockey"), "Die Prozente gelten inklusive Verlängerung. Viele Wetten bei Sporttip zählen nur die 60 Minuten."); box.append(w); }
+  if (sport === "hockey" || (sport === "alle" && list.some((g) => g.sport === "hockey"))) { const w = h("div", "warn"); w.style.marginTop = "1rem"; w.append(h("b", null, "Achtung bei Eishockey"), "Die Prozente gelten inklusive Verlängerung. Viele Wetten bei Sporttip zählen nur die 60 Minuten."); box.append(w); }
 }
 
 function renderBilanz() {
@@ -504,7 +504,12 @@ function renderGeldbar() {
   b.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("span", null, offeneW ? "· " + offeneW + (offeneW === 1 ? " Wette offen" : " Wetten offen") : "· keine Wette offen"), h("span", "gb-pfeil", "→"));
   b.onclick = () => go("schein");
 }
-function renderTipps() { renderGeldbar(); tippDerWoche(); renderTeam(); renderEmpfehlungen(); renderList(); renderBilanz(); const nf = $("#finger").children.length; $("#fingerWrap").hidden = !nf; $("#fwToggle").textContent = "Finger weg: " + nf + (nf === 1 ? " Spiel ist" : " Spiele sind") + " zu offen"; }
+function sportKnoepfe() {
+  const hock = SPIELE.some((g) => g.sport === "hockey" && offen(g));
+  const b = document.querySelector('.sports button[data-sport="hockey"]'); if (b) b.hidden = !hock;
+  if (!hock && sport === "hockey") { sport = "alle"; document.querySelectorAll(".sports button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.sport === "alle"))); }
+}
+function renderTipps() { sportKnoepfe(); renderGeldbar(); tippDerWoche(); renderTeam(); renderEmpfehlungen(); renderList(); renderBilanz(); const nf = $("#finger").children.length; $("#fingerWrap").hidden = !nf; $("#fwToggle").textContent = "Finger weg: " + nf + (nf === 1 ? " Spiel ist" : " Spiele sind") + " zu offen"; }
 
 /* ================================================================
    Tippschein
