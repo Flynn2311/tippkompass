@@ -237,7 +237,7 @@ function titel(rows) {
   const wk = letzteWoche(); const t = {};
   if (!wk) return t;
   const gew = rows.map((m) => ({ m, v: wochenGewinn(m.wetten, wk) })).sort((a, b) => b.v - a.v);
-  if (gew[0] && gew[0].v > 0) (t[gew[0].m.id] ||= []).push("Tippkönig der Woche");
+  if (gew[0] && gew[0].v > 0) (t[gew[0].m.id] ||= []).push("Pokal: Tippkönig der Woche");
   let best = null;
   rows.forEach((m) => (m.wetten || []).forEach((w) => { if (w.picks.length > 1 && status(w) === "gewonnen" && (!best || wQuote(w) > best.q)) best = { id: m.id, q: wQuote(w) }; }));
   if (best) (t[best.id] ||= []).push("Beste Kombi");
@@ -709,7 +709,7 @@ function renderGruppe() {
     if (hatClown(m.ich ? me || "ich" : m.id)) nmTxt.append(h("span", "clown", " 🤡"));
     nm.append(nmTxt);
     const gt = gekaufterTitel(m.ich ? aktiv : m.aktiv); if (gt) { const ts0 = h("span", "titles shoptitel"); ts0.append(h("small", null, gt)); nm.append(ts0); }
-    if (tt[m.id]) { const ts = h("span", "titles"); tt[m.id].forEach((x) => ts.append(h("small", null, x))); nm.append(ts); }
+    if (tt[m.id]) { const ts = h("span", "titles"); tt[m.id].forEach((x) => ts.append(h("small", x.startsWith("Pokal") ? "pokal" : null, x))); nm.append(ts); }
     btn.append(h("span", "pos", String(i + 1)), nm);
     const right = h("span", "rk-r"); right.append(h("b", null, fr(m.k.stand)), h("small", m.k.gewinn >= 0 ? "pos" : "neg", (m.k.gewinn >= 0 ? "+" : "−") + fr(Math.abs(m.k.gewinn)) + " gewonnen"));
     btn.append(right);
@@ -718,7 +718,11 @@ function renderGruppe() {
     if (offenMitglied === m.id) {
       const d = h("div", "rk-detail");
       d.append(h("div", "sub", m.k.treffer + " von " + m.k.fertig + " Wetten getroffen · " + m.k.offen + " offen · " + fr(m.k.einsatzOffen) + " im Spiel"));
-      (m.wetten || []).slice().sort((a, b) => b.ts - a.ts).forEach((w) => d.append(wettKarte(w)));
+      const geheim = (w) => !m.ich && !spionAktiv(m.id) && w.picks.some((p) => { const g = spiel(p.g); return g && offen(g); });
+      let versteckt = 0;
+      (m.wetten || []).slice().sort((a, b) => b.ts - a.ts).forEach((w) => { if (geheim(w)) versteckt++; else d.append(wettKarte(w)); });
+      if (versteckt) d.append(h("div", "sub geheim", versteckt + (versteckt === 1 ? " Tipp ist" : " Tipps sind") + " noch geheim und sichtbar ab Anpfiff. Mit dem Spion aus dem Shop siehst du sie früher."));
+      if (!m.ich && spionAktiv(m.id)) d.prepend(h("div", "sub geheim", "Spion aktiv: du siehst die offenen Tipps."));
       if (!(m.wetten || []).length) d.append(h("div", "sub", "Noch keine Wetten."));
       li.append(d);
     }
@@ -1063,6 +1067,7 @@ const SHOP = [
   { id: "f-gold", typ: "farbe", name: "Gold", preis: 400 },
   { id: "j-vers", typ: "joker", name: "Kombi-Versicherung", preis: 120, info: "Geht bei einer Kombi genau ein Tipp daneben, bekommst du den Einsatz zurück." },
   { id: "j-boost", typ: "joker", name: "Quoten-Boost", preis: 80, info: "+10 % Gewinn auf eine Wette, wenn sie aufgeht." },
+  { id: "j-spion", typ: "spion", name: "Spion", preis: 100, info: "24 Stunden siehst du die offenen Tipps eines Kollegen, schon vor dem Anpfiff. Sonst sind sie geheim." },
   { id: "s-clown", typ: "stich", name: "Clown verteilen", preis: 50, info: "Ein Kollege trägt 24 Stunden einen Clown neben dem Namen." },
   { id: "s-schild", typ: "schild", name: "Schutzschild", preis: 60, info: "24 Stunden kann dir niemand einen Clown verpassen." },
 ];
@@ -1154,11 +1159,13 @@ function kaufen(item, extra) {
   speichern(); renderAll(); return true;
 }
 let auswahl = null;
+const spionUebrig = () => kaeufe.filter((k) => k.id === "j-spion").length - kaeufe.filter((k) => k.id === "j-spion-use").length;
+const spionAktiv = (id) => kaeufe.some((k) => k.id === "j-spion-use" && k.an === id && Date.now() < k.ts + TAG);
 const SELT = ["Gewöhnlich", "Selten", "Episch", "Legendär"];
 const seltenheit = (p) => (p < 150 ? 0 : p < 250 ? 1 : p < 500 ? 2 : 3);
 function heuteNr() { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); }
 function angebot() {
-  const pool = SHOP.filter((x) => x.typ === "titel" || x.typ === "farbe" || x.typ === "joker");
+  const pool = SHOP.filter((x) => x.typ === "joker" || x.typ === "spion");
   const it = pool[heuteNr() % pool.length]; return { it, preis: Math.round(it.preis * 0.7) };
 }
 function bisMitternacht() { const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0); const s = Math.floor((m - n) / 6e4); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
@@ -1168,20 +1175,9 @@ function renderShop() {
   const kh = h("div", "kontoline"); kh.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("small", null, "Verdien mehr, indem du im Tippschein mit Spielgeld richtig tippst."));
   box.append(kh);
 
-  // Anprobe
-  const pv = auswahl && (auswahl.typ === "titel" || auswahl.typ === "farbe") ? auswahl : null;
-  const tId = pv && pv.typ === "titel" ? pv.id : aktiv.titel, fId = pv && pv.typ === "farbe" ? pv.id : aktiv.farbe;
-  const an = h("div", "anprobe"); an.append(h("small", null, pv ? "Anprobe: so würde dich deine Gruppe sehen" : "So sieht dich deine Gruppe"));
-  an.append(h("div", "nick" + (fId ? " nf-" + fId : ""), profil?.nick || "Du"));
-  const tags = h("div", "pv-tags");
-  if (tId && shopItem(tId)) tags.append(h("span", "pv-pill", shopItem(tId).name));
-  if (me && hatClown(me)) tags.append(h("span", "pv-pill grau", "Clown"));
-  if (!tags.children.length) tags.append(h("span", "pv-leer", "Noch kein Titel angelegt"));
-  an.append(tags); box.append(an);
-
   // Auswahl-Panel
   const pan = h("div", "pv-panel");
-  if (!auswahl) { pan.append(h("small", null, "Tippe unten etwas an, um es anzuprobieren oder zu kaufen.")); }
+  if (!auswahl) { pan.append(h("small", null, "Tippe unten etwas an, um mehr zu erfahren oder es zu kaufen.")); }
   else {
     const a = auswahl, preisX = deal.it.id === a.id ? deal.preis : a.preis;
     const kopf = h("div", "pv-kopf"); kopf.append(h("b", null, a.name), h("span", "selt s" + seltenheit(a.preis), SELT[seltenheit(a.preis)])); pan.append(kopf);
@@ -1197,6 +1193,15 @@ function renderShop() {
     } else if (a.typ === "joker") {
       const n = jokerUebrig(a.id); if (n > 0) act.append(h("small", "anz", n + " im Besitz"));
       act.append(kaufBtn("Kaufen · " + preisTxt, () => toast(a.name + " gekauft")));
+    } else if (a.typ === "spion") {
+      const n = spionUebrig(); if (n > 0) act.append(h("small", "anz", n + " im Besitz"));
+      act.append(kaufBtn("Kaufen · " + preisTxt, () => toast("Spion gekauft")));
+      const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
+      if (n > 0 && andere.length) {
+        const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
+        const e = h("button", "sbtn", "Einsetzen"); e.onclick = () => { const z = andere.find((m) => m.id === sel.value); if (!z) return; kaeufe.push({ ts: Date.now(), id: "j-spion-use", preis: 0, an: z.id }); speichern(); renderAll(); toast("Du siehst jetzt 24 Stunden die Tipps von " + z.nick + "."); };
+        act.append(sel, e);
+      } else if (n > 0) act.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen in der Gruppe" : "Einsetzen geht nur in einer Gruppe"));
     } else if (a.typ === "schild") {
       const aktivS = schildAktiv(kaeufe, Date.now()); if (aktivS) act.append(h("small", "anz", "aktiv"));
       const b = kaufBtn("Kaufen · " + preisTxt, () => toast("Schutzschild aktiv für 24 Stunden")); if (aktivS) b.disabled = true; act.append(b);
@@ -1237,8 +1242,8 @@ function renderShop() {
     });
     w.append(row); return w;
   };
-  box.append(lane("Titel", SHOP.filter((x) => x.typ === "titel")), lane("Namensfarben", SHOP.filter((x) => x.typ === "farbe")), lane("Joker und Spass", SHOP.filter((x) => x.typ === "joker" || x.typ === "stich" || x.typ === "schild")));
-  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben. Das Tagesangebot wechselt um Mitternacht."));
+  box.append(lane("Joker für deine Wetten", SHOP.filter((x) => x.typ === "joker")), lane("Für die Gruppe", SHOP.filter((x) => x.typ === "spion" || x.typ === "stich" || x.typ === "schild")));
+  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben. Das Tagesangebot wechselt um Mitternacht. Titel und Designs verdienst du dir über Stufen und Errungenschaften."));
 }
 
 function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
