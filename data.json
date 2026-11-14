@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-14T18:33:00+01:00",
+ "STAND": "2026-11-14T19:00:00+01:00",
  "SPIELE": [
   {
    "id": "n1",
@@ -776,11 +776,6 @@
    "id": "c9",
    "wahl": "a",
    "text": "Betis ist in Bratislava klarer Favorit. Slovan gewinnt laut Daten nur etwa jedes zehnte solche Spiel."
-  },
-  {
-   "id": "n13",
-   "wahl": "h",
-   "text": "Carolina hat am Donnerstag schon 4:1 in Seattle gewonnen und spielt jetzt zuhause. Klarster Tipp im Eishockey heute."
   },
   {
    "id": "n17",
