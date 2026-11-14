@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-13T11:55:00+01:00",
+ "STAND": "2026-11-14T14:25:00+01:00",
  "SPIELE": [
   {
    "id": "n1",
@@ -518,7 +518,8 @@
    "p": {
     "h": 34.2,
     "a": 65.8
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n12",
@@ -530,7 +531,8 @@
    "p": {
     "h": 61.8,
     "a": 38.2
-   }
+   },
+   "res": "a"
   },
   {
    "id": "b10",
@@ -543,6 +545,126 @@
     "h": 54.1,
     "u": 22.6,
     "a": 23.3
+   }
+  },
+  {
+   "id": "n13",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-14T18:00:00Z",
+   "h": "Carolina Hurricanes",
+   "a": "Seattle Kraken",
+   "p": {
+    "h": 79.4,
+    "a": 20.6
+   }
+  },
+  {
+   "id": "n14",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-14T20:30:00Z",
+   "h": "Chicago Blackhawks",
+   "a": "Winnipeg Jets",
+   "p": {
+    "h": 40.7,
+    "a": 59.3
+   }
+  },
+  {
+   "id": "n15",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Montreal Canadiens",
+   "a": "Colorado Avalanche",
+   "p": {
+    "h": 52.9,
+    "a": 47.1
+   }
+  },
+  {
+   "id": "n16",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Toronto Maple Leafs",
+   "a": "Edmonton Oilers",
+   "p": {
+    "h": 42.3,
+    "a": 57.7
+   }
+  },
+  {
+   "id": "n17",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Tampa Bay Lightning",
+   "a": "Detroit Red Wings",
+   "p": {
+    "h": 65.9,
+    "a": 34.1
+   }
+  },
+  {
+   "id": "n18",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Boston Bruins",
+   "a": "Minnesota Wild",
+   "p": {
+    "h": 48.9,
+    "a": 51.1
+   }
+  },
+  {
+   "id": "n19",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Washington Capitals",
+   "a": "New Jersey Devils",
+   "p": {
+    "h": 48.2,
+    "a": 51.8
+   }
+  },
+  {
+   "id": "n20",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Pittsburgh Penguins",
+   "a": "Ottawa Senators",
+   "p": {
+    "h": 45.5,
+    "a": 54.5
+   }
+  },
+  {
+   "id": "n21",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "St. Louis Blues",
+   "a": "Florida Panthers",
+   "p": {
+    "h": 48.9,
+    "a": 51.1
+   }
+  },
+  {
+   "id": "n22",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-15T00:00:00Z",
+   "h": "Columbus Blue Jackets",
+   "a": "Philadelphia Flyers",
+   "p": {
+    "h": 55.4,
+    "a": 44.6
    }
   }
  ],
@@ -578,9 +700,14 @@
    "text": "Betis ist in Bratislava klarer Favorit. Slovan gewinnt laut Daten nur etwa jedes zehnte solche Spiel."
   },
   {
-   "id": "n11",
-   "wahl": "a",
-   "text": "Die Rangers haben in Calgary 3:1 gewonnen und sind in Vancouver klar vorne."
+   "id": "n13",
+   "wahl": "h",
+   "text": "Carolina hat am Donnerstag schon 4:1 in Seattle gewonnen und spielt jetzt zuhause. Klarster Tipp im Eishockey heute."
+  },
+  {
+   "id": "n17",
+   "wahl": "h",
+   "text": "Tampa Bay hat zuletzt 8:3 und 3:1 gewonnen. Detroit verlor in Florida 4:5."
   }
  ],
  "RESULTATE": [
@@ -989,6 +1116,20 @@
    "a": "St. Louis Blues",
    "hs": 0,
    "as": 1
+  },
+  {
+   "d": "2026-11-13",
+   "h": "Vancouver Canucks",
+   "a": "New York Rangers",
+   "hs": 1,
+   "as": 5
+  },
+  {
+   "d": "2026-11-13",
+   "h": "Vegas Golden Knights",
+   "a": "Nashville Predators",
+   "hs": 2,
+   "as": 3
   }
  ],
  "TIPP_DER_WOCHE": "e9"

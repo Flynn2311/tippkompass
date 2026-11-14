@@ -564,15 +564,18 @@ function renderSchein() {
   const k = zielGruppe ? konto(wetten, gruppe.start) : konto(solo, SOLO_START);
   const frei = Math.max(0, Math.floor((zielGruppe ? k.stand : spielgeld()) * 100) / 100);
   const lab = h("label", null, (zielGruppe ? "In der Gruppe setzen" : "Mit Spielgeld setzen") + " · verfügbar " + fr(frei)); lab.htmlFor = "einsatz";
-  const inp = h("input"); inp.id = "einsatz"; inp.type = "number"; inp.min = "1"; inp.step = "1"; inp.inputMode = "decimal"; inp.value = Math.min(10, Math.floor(frei));
-  const gew = h("div", "lbl"); const upd = () => { gew.textContent = "Möglicher Gewinn: " + fr((parseFloat(inp.value) || 0) * q); }; inp.oninput = upd; upd();
+  const inp = h("input"); inp.id = "einsatz"; inp.type = "text"; inp.inputMode = "decimal"; inp.autocomplete = "off"; inp.maxLength = 9; inp.value = Math.min(10, Math.floor(frei));
+  let useVers = false, useBoost = false;
+  const betrag = () => { const t = String(inp.value).trim().replace(/['’\s]/g, "").replace(",", "."); return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN; };
+  const gew = h("div", "lbl"); const upd = () => { const v = betrag(); gew.textContent = isNaN(v) ? "Gib einen Betrag in Franken ein, z. B. 10" : "Möglicher Gewinn: " + fr(v * q * (useBoost ? 1.1 : 1)); }; inp.oninput = upd; upd();
   const btn = h("button", "place", zielGruppe ? "In «" + gruppe.name + "» setzen" : "Mit Spielgeld setzen");
   const ende = zielGruppe && gruppe.ende && new Date(gruppe.ende) < now;
   btn.disabled = frei < 1 || ende;
   if (ende) btn.textContent = "Die Runde ist vorbei";
   btn.onclick = async () => {
-    const e = Math.round((parseFloat(inp.value) || 0) * 100) / 100;
-    if (e < 1) { inp.focus(); return; }
+    const e = Math.round((betrag() || 0) * 100) / 100;
+    if (isNaN(betrag())) { toast("Gib einen Betrag ein, z. B. 10"); inp.focus(); return; }
+    if (e < 1) { toast("Der Einsatz muss mindestens Fr. 1 sein"); inp.focus(); return; }
     if (e > frei) { toast("So viel hast du nicht mehr: " + fr(frei)); return; }
     btn.disabled = true;
     const srv = await serverZeit();
@@ -585,10 +588,10 @@ function renderSchein() {
     (zielGruppe ? wetten : solo).push(w);
     schein = []; speichern(); renderAll(); toast("Gesetzt");
   };
-  const jk = h("div", "joker-opts"); let useVers = false, useBoost = false;
+  const jk = h("div", "joker-opts");
   const jopt = (name, anz, onc) => { const b = h("button", "jopt", name + " · " + anz + " übrig"); b.setAttribute("aria-pressed", "false"); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); onc(on); }; jk.append(b); };
   if (jokerUebrig("j-vers") > 0 && schein.length > 1) jopt("Versicherung", jokerUebrig("j-vers"), (on) => (useVers = on));
-  if (jokerUebrig("j-boost") > 0) jopt("Quoten-Boost +10 %", jokerUebrig("j-boost"), (on) => { useBoost = on; gew.textContent = "Möglicher Gewinn: " + fr((parseFloat(inp.value) || 0) * q * (on ? 1.1 : 1)); });
+  if (jokerUebrig("j-boost") > 0) jopt("Quoten-Boost +10 %", jokerUebrig("j-boost"), (on) => { useBoost = on; upd(); });
   form.append(lab, inp, gew);
   if (jk.children.length) form.append(jk);
   form.append(btn);
@@ -791,7 +794,7 @@ $("#s1next").onclick = () => showStep("frage");
 $("#kenneJa").onclick = () => showStep(typeof me !== "undefined" && me ? 2 : (document.querySelector('.step[data-step="0"]') ? 0 : 2));
 $("#kenneNein").onclick = () => showStep("erkl");
 $("#erklOk").onclick = () => { if (erklAusProfil) { erklAusProfil = false; $("#onb").hidden = true; return; } $("#kenneJa").onclick(); };
-$("#s2next").onclick = () => { const n = $("#onbNick").value.trim(); if (!n) { $("#onbNick").focus(); return; } draft.nick = n.slice(0, 20); showStep(3); };
+$("#s2next").onclick = () => { const n = $("#onbNick").value.trim(); if (!n) { toast("Gib einen Namen ein"); $("#onbNick").focus(); return; } draft.nick = n.slice(0, 20); showStep(3); };
 $("#chTipps").onclick = () => finish(null);
 $("#chCreate").onclick = () => { if (!me) { gruppeNachLogin = 4; toast("Für Gruppen brauchst du ein Konto"); showStep(0); return; } showStep(4); };
 $("#chJoin").onclick = () => { if (!me) { gruppeNachLogin = 5; toast("Für Gruppen brauchst du ein Konto"); showStep(0); return; } showStep(5); };
@@ -800,7 +803,7 @@ document.querySelectorAll(".chip-opt").forEach((b) => (b.onclick = () => {
   b.parentElement.querySelectorAll(".chip-opt").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
 }));
 $("#createGroup").onclick = async () => {
-  const name = $("#gName").value.trim() || "Unsere Runde";
+  const name = $("#gName").value.trim().slice(0, 30) || "Unsere Runde";
   const start = parseFloat(document.querySelector('#gStart .chip-opt[aria-pressed="true"]').dataset.v);
   const wochen = parseFloat(document.querySelector('#gDauer .chip-opt[aria-pressed="true"]').dataset.v);
   const ende = new Date(now.getTime() + wochen * 7 * 864e5).toISOString();
@@ -812,10 +815,10 @@ $("#createGroup").onclick = async () => {
 };
 $("#joinGroup").onclick = async () => {
   const code = $("#gCode").value.trim().toUpperCase();
-  if (code.length < 4) { $("#gCode").focus(); return; }
+  if (code.length < 4) { toast("Gib den Code deiner Gruppe ein (6 Zeichen)"); $("#gCode").focus(); return; }
   let g = store.get("gruppe_" + code, null);
   if (db) { try { const x = await db.doc("groups/" + code).get(); if (x && x.name) g = { name: x.name, start: x.start || 100, ende: x.ende || null }; } catch {} }
-  if (!g) { toast("Diesen Code gibt es nicht."); return; }
+  if (!g) { toast(code ? "Diesen Code gibt es nicht. Prüf ihn nochmals." : "Gib den Code deiner Gruppe ein"); return; }
   gruppe = g; finish(code);
 };
 /* ---------- Anmeldung ---------- */
@@ -931,6 +934,7 @@ function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
   ["tipps", "schein", "shop", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
   if (view === "schein") renderSchein();
+  window.scrollTo(0, 0); // tabwechsel
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => go(b.dataset.view)));
@@ -956,7 +960,7 @@ function zeigeSub(t) {
 document.querySelectorAll(".subtabs button").forEach((b) => (b.onclick = () => zeigeSub(b.dataset.sub)));
 zeigeSub(subTab);
 $("#fwToggle").onclick = () => { const o = $("#fwToggle").getAttribute("aria-expanded") === "true"; $("#fwToggle").setAttribute("aria-expanded", String(!o)); $("#finger").hidden = o; };
-function zeigeStand() { (function stale() { const hrs = (now - new Date(STAND)) / 36e5; if (hrs > 24) { const el = $("#stale"); el.hidden = false; el.textContent = "Die Tipps sind " + Math.floor(hrs / 24) + " Tag(e) alt. Bald kommt ein Update."; } })();
+function zeigeStand() { (function stale() { const hrs = (now - new Date(STAND)) / 36e5; if (hrs > 24) { const el = $("#stale"); el.hidden = false; el.textContent = "Die Tipps sind " + Math.floor(hrs / 24) + (Math.floor(hrs / 24) === 1 ? " Tag" : " Tage") + " alt. Bald kommt ein Update."; } })();
 $("#stand").textContent = "Stand: " + new Intl.DateTimeFormat("de-CH", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: tz }).format(new Date(STAND)); }
 zeigeStand();
 if (profil?.gruppe) gruppe = store.get("gruppe_" + profil.gruppe, null);

@@ -507,6 +507,25 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
 .pwrap input { padding-right: 3.2rem; }
 .eye { position: absolute; right: .3rem; top: 50%; transform: translateY(-50%); background: none; border: 0; padding: .4rem; color: var(--soft); font: inherit; font-size: .8rem; font-weight: 700; }
 .authcode { display: block; font-size: .78rem; color: var(--soft); margin-top: .2rem; }
+/* Korrekturen aus dem Test mit 100 Nutzern */
+.sports { gap: .3rem; }
+.sports button { flex: 1 1 auto; padding: .55rem .5rem; min-height: 40px; }
+.opts.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.opts.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.opt { min-width: 0; min-height: 44px; }
+.opt small, .opt span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stake input, .stake .place, .stake .btn, .stake label, .stake .lbl { width: 100%; min-width: 0; box-sizing: border-box; }
+.sum, .kombi, .g-hero, .card { min-width: 0; overflow-wrap: anywhere; }
+.gname, .g-hero .lbl, .nick, .rank2 li, .shop-l b, h2 { overflow-wrap: anywhere; word-break: break-word; }
+.x, .more, .back, .linkbtn, .eye, .switch { min-height: 40px; padding-top: .55rem; padding-bottom: .55rem; }
+.x { padding-left: .5rem; }
+.eye { min-width: 44px; }
+.foot a, .help a, .card a, .view a { display: inline-block; padding: .6rem 0; min-height: 40px; box-sizing: border-box; }
+.foot { padding-bottom: 1.5rem; }
+.tk-unten { flex-wrap: wrap; }
+.shop-row { flex-wrap: wrap; }
+.shop-r { margin-left: auto; }
+@media (max-width: 360px) { .brand { font-size: 1.9rem; } .subtabs button { font-size: .9rem; } .risk button { padding-left: .2rem; padding-right: .2rem; } .tabs button { font-size: .66rem; } }
 .google { display: flex; align-items: center; justify-content: center; gap: .6rem; background: #fff !important; color: var(--ink) !important; border: 1px solid var(--line); }
 .oder { display: flex; align-items: center; gap: .7rem; color: var(--soft); font-size: .85rem; margin: 1rem 0 .4rem; }
 .oder::before, .oder::after { content: ""; flex: 1; height: 1px; background: var(--line); }
@@ -678,7 +697,7 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
     </div>
     <div class="step" data-step="4" hidden>
       <h2>Neue Gruppe</h2>
-      <div class="field"><label for="gName">Name der Gruppe</label><input id="gName" placeholder="z. B. Kanti-Tipprunde"></div>
+      <div class="field"><label for="gName">Name der Gruppe</label><input id="gName" maxlength="30" placeholder="z. B. Kanti-Tipprunde"></div>
       <div class="field"><label>Startgeld pro Person</label>
         <div class="chips-row" id="gStart"><button class="chip-opt" data-v="50" aria-pressed="false">Fr. 50</button><button class="chip-opt" data-v="100" aria-pressed="true">Fr. 100</button><button class="chip-opt" data-v="500" aria-pressed="false">Fr. 500</button><button class="chip-opt" data-v="1000" aria-pressed="false">Fr. 1'000</button></div></div>
       <div class="field"><label>Wie lange?</label>
