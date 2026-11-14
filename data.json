@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-14T14:25:00+01:00",
+ "STAND": "2026-11-14T18:26:00+01:00",
  "SPIELE": [
   {
    "id": "n1",
@@ -139,9 +139,9 @@
    "h": "Bayern München",
    "a": "1. FC Köln",
    "p": {
-    "h": 89.1,
-    "u": 7.1,
-    "a": 3.8
+    "h": 87.2,
+    "u": 8.1,
+    "a": 4.7
    }
   },
   {
@@ -152,9 +152,9 @@
    "h": "Bayer Leverkusen",
    "a": "SC Paderborn",
    "p": {
-    "h": 76.4,
-    "u": 13.7,
-    "a": 9.9
+    "h": 74.9,
+    "u": 14.7,
+    "a": 10.4
    }
   },
   {
@@ -165,9 +165,9 @@
    "h": "Eintracht Frankfurt",
    "a": "TSG Hoffenheim",
    "p": {
-    "h": 39.9,
-    "u": 24,
-    "a": 36.1
+    "h": 41,
+    "u": 24.1,
+    "a": 34.9
    }
   },
   {
@@ -178,9 +178,9 @@
    "h": "Union Berlin",
    "a": "RB Leipzig",
    "p": {
-    "h": 18,
-    "u": 20.5,
-    "a": 61.5
+    "h": 18.5,
+    "u": 21.1,
+    "a": 60.4
    }
   },
   {
@@ -191,9 +191,9 @@
    "h": "Gladbach",
    "a": "Borussia Dortmund",
    "p": {
-    "h": 19.7,
-    "u": 21.2,
-    "a": 59.1
+    "h": 19.9,
+    "u": 21.8,
+    "a": 58.3
    }
   },
   {
@@ -204,9 +204,9 @@
    "h": "SV Elversberg",
    "a": "SC Freiburg",
    "p": {
-    "h": 28.4,
-    "u": 25.1,
-    "a": 46.5
+    "h": 27.7,
+    "u": 25.2,
+    "a": 47.1
    }
   },
   {
@@ -217,9 +217,9 @@
    "h": "Schalke 04",
    "a": "VfB Stuttgart",
    "p": {
-    "h": 24.4,
-    "u": 22.9,
-    "a": 52.7
+    "h": 24.2,
+    "u": 23.4,
+    "a": 52.4
    }
   },
   {
@@ -230,9 +230,9 @@
    "h": "FC Augsburg",
    "a": "FSV Mainz",
    "p": {
-    "h": 35.3,
+    "h": 35,
     "u": 24.6,
-    "a": 40.1
+    "a": 40.4
    }
   },
   {
@@ -243,8 +243,8 @@
    "h": "Werder Bremen",
    "a": "Hamburger SV",
    "p": {
-    "h": 57.2,
-    "u": 22.2,
+    "h": 56.9,
+    "u": 22.5,
     "a": 20.6
    }
   },
@@ -256,9 +256,9 @@
    "h": "Manchester City",
    "a": "Fulham",
    "p": {
-    "h": 68.1,
-    "u": 18,
-    "a": 13.9
+    "h": 67.5,
+    "u": 18.7,
+    "a": 13.8
    }
   },
   {
@@ -269,9 +269,9 @@
    "h": "Aston Villa",
    "a": "Sunderland",
    "p": {
-    "h": 54.1,
+    "h": 53.9,
     "u": 24.8,
-    "a": 21.1
+    "a": 21.3
    }
   },
   {
@@ -282,9 +282,9 @@
    "h": "Bournemouth",
    "a": "Nottingham Forest",
    "p": {
-    "h": 47,
-    "u": 26.6,
-    "a": 26.4
+    "h": 47.4,
+    "u": 26.5,
+    "a": 26.1
    }
   },
   {
@@ -295,9 +295,9 @@
    "h": "Chelsea",
    "a": "Leeds United",
    "p": {
-    "h": 50.9,
+    "h": 51.1,
     "u": 25.2,
-    "a": 23.9
+    "a": 23.7
    }
   },
   {
@@ -308,9 +308,9 @@
    "h": "Coventry City",
    "a": "Crystal Palace",
    "p": {
-    "h": 40.4,
-    "u": 26.3,
-    "a": 33.3
+    "h": 39.8,
+    "u": 26.7,
+    "a": 33.5
    }
   },
   {
@@ -321,9 +321,9 @@
    "h": "Tottenham",
    "a": "Ipswich Town",
    "p": {
-    "h": 62,
-    "u": 21,
-    "a": 17
+    "h": 61.4,
+    "u": 21.5,
+    "a": 17.1
    }
   },
   {
@@ -334,9 +334,9 @@
    "h": "Newcastle",
    "a": "Arsenal",
    "p": {
-    "h": 17.2,
-    "u": 22.1,
-    "a": 60.7
+    "h": 17.3,
+    "u": 22.6,
+    "a": 60.1
    }
   },
   {
@@ -348,8 +348,8 @@
    "a": "Brighton",
    "p": {
     "h": 15.8,
-    "u": 20.6,
-    "a": 63.6
+    "u": 21.5,
+    "a": 62.7
    }
   },
   {
@@ -360,9 +360,9 @@
    "h": "Liverpool",
    "a": "Manchester United",
    "p": {
-    "h": 55.5,
-    "u": 22.5,
-    "a": 22
+    "h": 54.5,
+    "u": 23,
+    "a": 22.5
    }
   },
   {
@@ -373,9 +373,9 @@
    "h": "Brentford",
    "a": "Everton",
    "p": {
-    "h": 46.1,
-    "u": 26.2,
-    "a": 27.7
+    "h": 46.4,
+    "u": 26.1,
+    "a": 27.5
    }
   },
   {
@@ -666,6 +666,84 @@
     "h": 55.4,
     "a": 44.6
    }
+  },
+  {
+   "id": "o0248ebbc1e",
+   "sport": "fussball",
+   "liga": "Super League",
+   "zeit": "2026-11-21T17:00:00Z",
+   "h": "Young Boys",
+   "a": "FC Thun",
+   "p": {
+    "h": 66.5,
+    "u": 16.9,
+    "a": 16.6
+   }
+  },
+  {
+   "id": "o16118fac0e",
+   "sport": "fussball",
+   "liga": "Super League",
+   "zeit": "2026-11-21T17:00:00Z",
+   "h": "FC Lugano",
+   "a": "Grasshopper Zürich",
+   "p": {
+    "h": 67.2,
+    "u": 18,
+    "a": 14.8
+   }
+  },
+  {
+   "id": "o50b42ea09e",
+   "sport": "fussball",
+   "liga": "Super League",
+   "zeit": "2026-11-21T19:30:00Z",
+   "h": "FC Sion",
+   "a": "Servette",
+   "p": {
+    "h": 56.1,
+    "u": 22.7,
+    "a": 21.2
+   }
+  },
+  {
+   "id": "oeb0975c520",
+   "sport": "fussball",
+   "liga": "Super League",
+   "zeit": "2026-11-22T13:00:00Z",
+   "h": "FC Zürich",
+   "a": "FC St Gallen",
+   "p": {
+    "h": 27.3,
+    "u": 23.1,
+    "a": 49.6
+   }
+  },
+  {
+   "id": "o81d367b0e2",
+   "sport": "fussball",
+   "liga": "Super League",
+   "zeit": "2026-11-22T15:30:00Z",
+   "h": "FC Basel",
+   "a": "FC Luzern",
+   "p": {
+    "h": 42.7,
+    "u": 23,
+    "a": 34.3
+   }
+  },
+  {
+   "id": "o817d061912",
+   "sport": "fussball",
+   "liga": "Super League",
+   "zeit": "2026-11-22T15:30:00Z",
+   "h": "Lausanne-Sport",
+   "a": "FC Vaduz",
+   "p": {
+    "h": 42.9,
+    "u": 24.3,
+    "a": 32.8
+   }
   }
  ],
  "TOPS": [
@@ -717,139 +795,6 @@
    "a": "Hamburger SV",
    "hs": 3,
    "as": 1
-  },
-  {
-   "d": "2026-11-06",
-   "h": "Hamburger SV",
-   "a": "Gladbach",
-   "hs": 3,
-   "as": 1
-  },
-  {
-   "d": "2026-11-07",
-   "h": "Borussia Dortmund",
-   "a": "SV Elversberg",
-   "hs": 2,
-   "as": 1
-  },
-  {
-   "d": "2026-11-07",
-   "h": "RB Leipzig",
-   "a": "FC Augsburg",
-   "hs": 5,
-   "as": 2
-  },
-  {
-   "d": "2026-11-07",
-   "h": "FSV Mainz",
-   "a": "Bayern München",
-   "hs": 1,
-   "as": 2
-  },
-  {
-   "d": "2026-11-07",
-   "h": "SC Paderborn",
-   "a": "Eintracht Frankfurt",
-   "hs": 2,
-   "as": 2
-  },
-  {
-   "d": "2026-11-07",
-   "h": "VfB Stuttgart",
-   "a": "Werder Bremen",
-   "hs": 1,
-   "as": 0
-  },
-  {
-   "d": "2026-11-08",
-   "h": "1. FC Köln",
-   "a": "Bayer Leverkusen",
-   "hs": 1,
-   "as": 2
-  },
-  {
-   "d": "2026-11-08",
-   "h": "SC Freiburg",
-   "a": "Union Berlin",
-   "hs": 2,
-   "as": 0
-  },
-  {
-   "d": "2026-11-08",
-   "h": "TSG Hoffenheim",
-   "a": "Schalke 04",
-   "hs": 2,
-   "as": 1
-  },
-  {
-   "d": "2026-11-06",
-   "h": "Everton",
-   "a": "Coventry City",
-   "hs": 3,
-   "as": 1
-  },
-  {
-   "d": "2026-11-07",
-   "h": "Leeds United",
-   "a": "Tottenham",
-   "hs": 1,
-   "as": 0
-  },
-  {
-   "d": "2026-11-07",
-   "h": "Arsenal",
-   "a": "Hull City",
-   "hs": 1,
-   "as": 0
-  },
-  {
-   "d": "2026-11-07",
-   "h": "Fulham",
-   "a": "Newcastle",
-   "hs": 1,
-   "as": 1
-  },
-  {
-   "d": "2026-11-07",
-   "h": "Nottingham Forest",
-   "a": "Manchester City",
-   "hs": 3,
-   "as": 1
-  },
-  {
-   "d": "2026-11-08",
-   "h": "Brighton",
-   "a": "Brentford",
-   "hs": 2,
-   "as": 0
-  },
-  {
-   "d": "2026-11-08",
-   "h": "Crystal Palace",
-   "a": "Liverpool",
-   "hs": 1,
-   "as": 3
-  },
-  {
-   "d": "2026-11-08",
-   "h": "Ipswich Town",
-   "a": "Bournemouth",
-   "hs": 1,
-   "as": 2
-  },
-  {
-   "d": "2026-11-08",
-   "h": "Sunderland",
-   "a": "Chelsea",
-   "hs": 1,
-   "as": 0
-  },
-  {
-   "d": "2026-11-08",
-   "h": "Manchester United",
-   "a": "Aston Villa",
-   "hs": 4,
-   "as": 4
   },
   {
    "d": "2026-11-03",
@@ -920,6 +865,139 @@
    "a": "Sabah",
    "hs": 4,
    "as": 1
+  },
+  {
+   "d": "2026-11-06",
+   "h": "Hamburger SV",
+   "a": "Gladbach",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-06",
+   "h": "Everton",
+   "a": "Coventry City",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Borussia Dortmund",
+   "a": "SV Elversberg",
+   "hs": 2,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "RB Leipzig",
+   "a": "FC Augsburg",
+   "hs": 5,
+   "as": 2
+  },
+  {
+   "d": "2026-11-07",
+   "h": "FSV Mainz",
+   "a": "Bayern München",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-07",
+   "h": "SC Paderborn",
+   "a": "Eintracht Frankfurt",
+   "hs": 2,
+   "as": 2
+  },
+  {
+   "d": "2026-11-07",
+   "h": "VfB Stuttgart",
+   "a": "Werder Bremen",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Leeds United",
+   "a": "Tottenham",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Arsenal",
+   "a": "Hull City",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Fulham",
+   "a": "Newcastle",
+   "hs": 1,
+   "as": 1
+  },
+  {
+   "d": "2026-11-07",
+   "h": "Nottingham Forest",
+   "a": "Manchester City",
+   "hs": 3,
+   "as": 1
+  },
+  {
+   "d": "2026-11-08",
+   "h": "1. FC Köln",
+   "a": "Bayer Leverkusen",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-08",
+   "h": "SC Freiburg",
+   "a": "Union Berlin",
+   "hs": 2,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "TSG Hoffenheim",
+   "a": "Schalke 04",
+   "hs": 2,
+   "as": 1
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Brighton",
+   "a": "Brentford",
+   "hs": 2,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Crystal Palace",
+   "a": "Liverpool",
+   "hs": 1,
+   "as": 3
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Ipswich Town",
+   "a": "Bournemouth",
+   "hs": 1,
+   "as": 2
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Sunderland",
+   "a": "Chelsea",
+   "hs": 1,
+   "as": 0
+  },
+  {
+   "d": "2026-11-08",
+   "h": "Manchester United",
+   "a": "Aston Villa",
+   "hs": 4,
+   "as": 4
   },
   {
    "d": "2026-11-08",
@@ -1132,5 +1210,6 @@
    "as": 3
   }
  ],
- "TIPP_DER_WOCHE": "e9"
+ "TIPP_DER_WOCHE": "e9",
+ "ODDS_AT": "2026-11-14T17:26:40.289Z"
 }
