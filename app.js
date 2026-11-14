@@ -755,7 +755,7 @@ function renderProfil() {
   const ac = h("div", "card"); ac.append(h("h3", null, "Konto"));
   if (authUser) {
     ac.append(h("p", "sub", "Angemeldet als " + (authUser.email || "Google-Konto") + ". Dein Spielstand ist online gesichert und auf jedem Gerät da."));
-    const out = h("button", "btn ghost", "Abmelden"); out.onclick = async () => { await fb.logout(); toast("Abgemeldet"); };
+    const out = h("button", "btn ghost", "Abmelden"); out.onclick = async () => { await fb.logout(); geraetLeeren(); toast("Abgemeldet. Dein Spielstand ist im Konto gesichert."); };
     const del = h("button", "btn ghost", "Konto löschen"); del.style.marginTop = ".5rem";
     del.onclick = async () => {
       if (!del.dataset.ok) { del.dataset.ok = "1"; del.textContent = "Wirklich? Konto und Spielstand werden gelöscht. Nochmals tippen."; return; }
@@ -879,6 +879,13 @@ async function setFlynn(id, val) {
   if (val) flynn[id] = val; else delete flynn[id];
   renderAll();
   if (db) { try { await db.doc("meta/flynn").set({ picks: flynn, at: Date.now() }); toast("Gespeichert"); } catch { toast("Konnte nicht gespeichert werden."); } }
+}
+// Nach dem Abmelden: nichts vom Konto auf dem Gerät lassen
+function geraetLeeren() {
+  profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; votes = {}; team = ""; schein = []; gruppe = null; mitglieder = [];
+  ["profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
+  try { Object.keys(localStorage).filter((k) => k.includes("gruppe_")).forEach((k) => localStorage.removeItem(k)); } catch {}
+  renderAll(); go("tipps"); openOnb(1);
 }
 function wiederherstellen(x) {
   if (!x) return false;
