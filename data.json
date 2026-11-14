@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-14T19:00:00+01:00",
+ "STAND": "2026-11-14T22:04:00+01:00",
  "SPIELE": [
   {
    "id": "n1",
@@ -557,7 +557,8 @@
    "p": {
     "h": 79.4,
     "a": 20.6
-   }
+   },
+   "res": "h"
   },
   {
    "id": "n14",
@@ -1203,6 +1204,13 @@
    "a": "Nashville Predators",
    "hs": 2,
    "as": 3
+  },
+  {
+   "d": "2026-11-14",
+   "h": "Carolina Hurricanes",
+   "a": "Seattle Kraken",
+   "hs": 5,
+   "as": 1
   }
  ],
  "TIPP_DER_WOCHE": "e9",
