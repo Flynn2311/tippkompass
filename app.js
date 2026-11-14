@@ -965,7 +965,7 @@ function zeigeSub(t) {
 document.querySelectorAll(".subtabs button").forEach((b) => (b.onclick = () => zeigeSub(b.dataset.sub)));
 zeigeSub(subTab);
 $("#fwToggle").onclick = () => { const o = $("#fwToggle").getAttribute("aria-expanded") === "true"; $("#fwToggle").setAttribute("aria-expanded", String(!o)); $("#finger").hidden = o; };
-function zeigeStand() { (function stale() { const hrs = (now - new Date(STAND)) / 36e5; if (hrs > 24) { const el = $("#stale"); el.hidden = false; el.textContent = "Die Tipps sind " + Math.floor(hrs / 24) + (Math.floor(hrs / 24) === 1 ? " Tag" : " Tage") + " alt. Bald kommt ein Update."; } })();
+function zeigeStand() { (function stale() { const hrs = (Date.now() - new Date(STAND)) / 36e5; const el = $("#stale"); el.hidden = hrs <= 24; if (hrs > 24) { el.textContent = "Die Tipps sind " + Math.floor(hrs / 24) + (Math.floor(hrs / 24) === 1 ? " Tag" : " Tage") + " alt. Bald kommt ein Update."; } })();
 $("#stand").textContent = "Stand: " + new Intl.DateTimeFormat("de-CH", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: tz }).format(new Date(STAND)); }
 zeigeStand();
 if (profil?.gruppe) gruppe = store.get("gruppe_" + profil.gruppe, null);
