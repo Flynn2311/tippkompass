@@ -1,0 +1,42 @@
+name: Daten-Update
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      quoten:
+        description: "Quoten jetzt holen (kostet 4 Credits)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daten-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Daten holen
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          FORCE_ODDS: ${{ github.event_name == 'workflow_dispatch' && inputs.quoten }}
+        run: node scripts/update.mjs
+      - name: Speichern
+        run: |
+          if git diff --quiet data.json; then echo "Nichts zu speichern"; exit 0; fi
+          git config user.name "tippkompass-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git commit -m "Daten-Update $(TZ=Europe/Zurich date '+%d.%m. %H:%M')"
+          git pull --rebase origin main || true
+          git push
