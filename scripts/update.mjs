@@ -80,7 +80,7 @@ async function holen(url, mockName) {
       const r = await fetch(url, { headers: { "user-agent": "tippkompass-update" } });
       if (r.ok) return { data: await r.json(), headers: r.headers };
       console.log("HTTP", r.status, url.replace(KEY, "***"));
-      if (r.status === 401 || r.status === 422 || r.status === 429) return null;
+      if ([400, 401, 403, 404, 422, 429].includes(r.status)) return null;
     } catch (e) { console.log("Fehler", e.message, url.replace(KEY, "***")); }
     await new Promise((s) => setTimeout(s, 3000));
   }
@@ -95,11 +95,28 @@ const vorher = JSON.stringify({ S: d.SPIELE, T: d.TOPS, R: d.RESULTATE, W: d.TIP
 const log = [];
 
 // ---------- 1) Resultate (ESPN) ----------
+// ESPN: mehrere Varianten probieren (Datumsbereich, einzelne Tage, ohne Datum)
+async function espn(pfad, von, bis) {
+  const basis = `https://site.api.espn.com/apis/site/v2/sports/${pfad}/scoreboard`;
+  const mock = "espn_" + pfad.replace("/", "_");
+  if (MOCK) return holen(basis, mock);
+  let r = await holen(`${basis}?dates=${ymd(von)}-${ymd(bis)}`, mock);
+  if (r) return r;
+  const events = [];
+  for (let t = new Date(von); t <= bis; t = new Date(t.getTime() + D)) {
+    const x = await holen(`${basis}?dates=${ymd(t)}`, mock);
+    if (x && x.data && Array.isArray(x.data.events)) events.push(...x.data.events);
+  }
+  if (events.length) return { data: { events } };
+  r = await holen(basis, mock);
+  if (!r) console.log("ESPN ohne Erfolg:", pfad);
+  return r;
+}
 async function resultate() {
   const von = new Date(now.getTime() - 3 * D), bis = new Date(now.getTime() + D);
   for (const L of [...LIGEN, ...NUR_RESULTATE]) {
     if (L.liga === "NHL" && !d.SPIELE.some((g) => g.liga === "NHL" && !g.res)) continue;
-    const r = await holen(`https://site.api.espn.com/apis/site/v2/sports/${L.espn}/scoreboard?dates=${ymd(von)}-${ymd(bis)}&limit=200`, "espn_" + L.espn.replace("/", "_"));
+    const r = await espn(L.espn, von, bis);
     if (!r) { log.push(`Resultate ${L.liga}: nicht erreichbar`); continue; }
     let neu = 0;
     for (const ev of r.data.events || []) {
@@ -125,7 +142,7 @@ async function resultate() {
   // Tennis
   const offeneT = d.SPIELE.filter((g) => g.sport === "tennis" && !g.res && new Date(g.zeit) < now);
   if (!offeneT.length) return;
-  const r = await holen(`https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard?dates=${ymd(von)}-${ymd(bis)}`, "espn_tennis_atp");
+  const r = await espn("tennis/atp", von, bis);
   if (!r) { log.push("Resultate Tennis: nicht erreichbar"); return; }
   const comps = []; (function such(o) { if (!o || typeof o !== "object") return; if (Array.isArray(o)) return o.forEach(such); if (Array.isArray(o.competitors) && o.competitors.length === 2) comps.push(o); for (const k of Object.keys(o)) if (k !== "competitors" && typeof o[k] === "object") such(o[k]); })(r.data.events || []);
   let neu = 0;
