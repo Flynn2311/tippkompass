@@ -1153,52 +1153,92 @@ function kaufen(item, extra) {
   if (item.typ === "farbe") aktiv.farbe = item.id;
   speichern(); renderAll(); return true;
 }
+let auswahl = null;
+const SELT = ["Gewöhnlich", "Selten", "Episch", "Legendär"];
+const seltenheit = (p) => (p < 150 ? 0 : p < 250 ? 1 : p < 500 ? 2 : 3);
+function heuteNr() { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); }
+function angebot() {
+  const pool = SHOP.filter((x) => x.typ === "titel" || x.typ === "farbe" || x.typ === "joker");
+  const it = pool[heuteNr() % pool.length]; return { it, preis: Math.round(it.preis * 0.7) };
+}
+function bisMitternacht() { const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0); const s = Math.floor((m - n) / 6e4); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
 function renderShop() {
   const box = $("#shopBox"); if (!box) return; box.replaceChildren();
+  const deal = angebot();
   const kh = h("div", "kontoline"); kh.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("small", null, "Verdien mehr, indem du im Tippschein mit Spielgeld richtig tippst."));
   box.append(kh);
-  const gruppeTxt = { titel: ["Titel", "Steht in der Rangliste neben deinem Namen. Einer ist aktiv."], farbe: ["Namensfarbe", "So erscheint dein Name in der Rangliste."], joker: ["Joker", "Setzt du beim Platzieren einer Wette ein."], stich: ["Sticheln", "Nur in einer Gruppe."] };
-  ["titel", "farbe", "joker", "stich"].forEach((typ) => {
-    const sec = h("div", "shop-sec"); sec.append(h("h3", null, gruppeTxt[typ][0]), h("p", "sub", gruppeTxt[typ][1]));
-    SHOP.filter((x) => x.typ === typ || (typ === "stich" && x.typ === "schild")).forEach((it) => {
-      const row = h("div", "shop-row");
-      const l = h("div", "shop-l");
-      const nameEl = h("b", it.typ === "farbe" ? "nick nf-" + it.id : null, it.name);
-      l.append(nameEl); if (it.info) l.append(h("small", null, it.info));
-      const r = h("div", "shop-r");
-      if (it.typ === "titel" || it.typ === "farbe") {
-        const feld = it.typ;
-        if (besitzt(it.id)) {
-          const istAktiv = aktiv[feld] === it.id;
-          const b = h("button", "sbtn" + (istAktiv ? " on" : ""), istAktiv ? "Aktiv" : "Anlegen");
-          b.onclick = () => { aktiv[feld] = istAktiv ? null : it.id; speichern(); renderAll(); toast(istAktiv ? "Abgelegt" : "Angelegt"); };
-          r.append(b);
-        } else { const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis; b.onclick = () => { if (kaufen(it)) toast(it.name + " gekauft"); }; r.append(b); }
-      } else if (it.typ === "joker") {
-        const n = jokerUebrig(it.id); if (n > 0) r.append(h("small", "anz", n + " im Besitz"));
-        const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis; b.onclick = () => { if (kaufen(it)) toast(it.name + " gekauft"); }; r.append(b);
-      } else if (it.typ === "schild") {
-        const an = schildAktiv(kaeufe, Date.now()); if (an) r.append(h("small", "anz", "aktiv"));
-        const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis || an; b.onclick = () => { if (kaufen(it)) toast("Schutzschild aktiv für 24 Stunden"); }; r.append(b);
-      } else if (it.typ === "stich") {
-        const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
-        if (!andere.length) { r.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen" : "Nur in einer Gruppe")); }
-        else {
-          const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
-          const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis;
-          b.onclick = () => {
-            const ziel = andere.find((m) => m.id === sel.value); if (!ziel) return;
-            if (schildAktiv(ziel.kaeufe, Date.now())) { toast(ziel.nick + " hat ein Schutzschild"); return; }
-            if (kaufen(it, { an: ziel.id })) toast(ziel.nick + " trägt jetzt 24 Stunden einen Clown");
-          };
-          r.append(sel, b);
-        }
+
+  // Anprobe
+  const pv = auswahl && (auswahl.typ === "titel" || auswahl.typ === "farbe") ? auswahl : null;
+  const tId = pv && pv.typ === "titel" ? pv.id : aktiv.titel, fId = pv && pv.typ === "farbe" ? pv.id : aktiv.farbe;
+  const an = h("div", "anprobe"); an.append(h("small", null, pv ? "Anprobe: so würde dich deine Gruppe sehen" : "So sieht dich deine Gruppe"));
+  an.append(h("div", "nick" + (fId ? " nf-" + fId : ""), profil?.nick || "Du"));
+  const tags = h("div", "pv-tags");
+  if (tId && shopItem(tId)) tags.append(h("span", "pv-pill", shopItem(tId).name));
+  if (me && hatClown(me)) tags.append(h("span", "pv-pill grau", "Clown"));
+  if (!tags.children.length) tags.append(h("span", "pv-leer", "Noch kein Titel angelegt"));
+  an.append(tags); box.append(an);
+
+  // Auswahl-Panel
+  const pan = h("div", "pv-panel");
+  if (!auswahl) { pan.append(h("small", null, "Tippe unten etwas an, um es anzuprobieren oder zu kaufen.")); }
+  else {
+    const a = auswahl, preisX = deal.it.id === a.id ? deal.preis : a.preis;
+    const kopf = h("div", "pv-kopf"); kopf.append(h("b", null, a.name), h("span", "selt s" + seltenheit(a.preis), SELT[seltenheit(a.preis)])); pan.append(kopf);
+    if (a.info) pan.append(h("small", null, a.info));
+    const act = h("div", "pv-act");
+    const preisTxt = preisX < a.preis ? "Fr. " + preisX + " (statt " + a.preis + ")" : "Fr. " + a.preis;
+    const kaufBtn = (txt, fn) => { const b = h("button", "sbtn buy", txt); b.disabled = spielgeld() < preisX; b.onclick = () => { if (kaufen({ ...a, preis: preisX })) { fn && fn(); } }; return b; };
+    if (a.typ === "titel" || a.typ === "farbe") {
+      if (besitzt(a.id)) {
+        const istAktiv = aktiv[a.typ] === a.id; const b = h("button", "sbtn" + (istAktiv ? " on" : ""), istAktiv ? "Aktiv · ablegen" : "Anlegen");
+        b.onclick = () => { aktiv[a.typ] = istAktiv ? null : a.id; speichern(); renderAll(); toast(istAktiv ? "Abgelegt" : "Angelegt"); }; act.append(b);
+      } else act.append(kaufBtn("Kaufen · " + preisTxt, () => toast(a.name + " gekauft")));
+    } else if (a.typ === "joker") {
+      const n = jokerUebrig(a.id); if (n > 0) act.append(h("small", "anz", n + " im Besitz"));
+      act.append(kaufBtn("Kaufen · " + preisTxt, () => toast(a.name + " gekauft")));
+    } else if (a.typ === "schild") {
+      const aktivS = schildAktiv(kaeufe, Date.now()); if (aktivS) act.append(h("small", "anz", "aktiv"));
+      const b = kaufBtn("Kaufen · " + preisTxt, () => toast("Schutzschild aktiv für 24 Stunden")); if (aktivS) b.disabled = true; act.append(b);
+    } else if (a.typ === "stich") {
+      const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
+      if (!andere.length) act.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen in der Gruppe" : "Nur in einer Gruppe"));
+      else {
+        const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
+        const b = h("button", "sbtn buy", "Kaufen · " + preisTxt); b.disabled = spielgeld() < preisX;
+        b.onclick = () => { const ziel = andere.find((m) => m.id === sel.value); if (!ziel) return; if (schildAktiv(ziel.kaeufe, Date.now())) { toast(ziel.nick + " hat ein Schutzschild"); return; } if (kaufen({ ...a, preis: preisX }, { an: ziel.id })) toast(ziel.nick + " trägt jetzt 24 Stunden einen Clown"); };
+        act.append(sel, b);
       }
-      row.append(l, r); sec.append(row);
+    }
+    pan.append(act);
+  }
+  box.append(pan);
+
+  // Tagesangebot
+  const d = h("button", "deal"); d.setAttribute("aria-pressed", String(!!(auswahl && auswahl.id === deal.it.id)));
+  const gesamm = (deal.it.typ === "titel" || deal.it.typ === "farbe") && besitzt(deal.it.id);
+  d.append(h("small", "deal-k", "TAGESANGEBOT · noch " + bisMitternacht() + " h"), h("div", "deal-n", deal.it.name));
+  const dz = h("div", "deal-z"); const pr = h("span"); const alt = h("s", null, "Fr. " + deal.it.preis); const neu = h("b", null, " Fr. " + deal.preis); pr.append(alt, neu);
+  dz.append(gesamm ? h("span", null, "Schon gesammelt") : pr, h("span", "deal-p", "-30 %")); d.append(dz);
+  d.onclick = () => { auswahl = deal.it; renderShop(); };
+  box.append(d);
+
+  // Reihen
+  const lane = (titel, items) => {
+    const w = h("div", "lane"); w.append(h("div", "lane-t", titel));
+    const row = h("div", "lane-r");
+    items.forEach((it) => {
+      const b = h("button", "mc r" + seltenheit(it.preis) + (auswahl && auswahl.id === it.id ? " sel" : ""));
+      const eigen = (it.typ === "titel" || it.typ === "farbe") && besitzt(it.id);
+      const sub = eigen ? (aktiv[it.typ] === it.id ? "Aktiv" : "Gesammelt") : "Fr. " + it.preis;
+      b.append(h("b", it.typ === "farbe" ? "nick nf-" + it.id : null, it.name), h("small", eigen ? "own" : null, sub));
+      b.onclick = () => { auswahl = it; renderShop(); };
+      row.append(b);
     });
-    box.append(sec);
-  });
-  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben."));
+    w.append(row); return w;
+  };
+  box.append(lane("Titel", SHOP.filter((x) => x.typ === "titel")), lane("Namensfarben", SHOP.filter((x) => x.typ === "farbe")), lane("Joker und Spass", SHOP.filter((x) => x.typ === "joker" || x.typ === "stich" || x.typ === "schild")));
+  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben. Das Tagesangebot wechselt um Mitternacht."));
 }
 
 function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
