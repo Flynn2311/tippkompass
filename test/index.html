@@ -611,6 +611,9 @@ body.detail-offen { overflow: hidden; }
 .tk-opt.empf { border-color: var(--ink); }
 .tk-opt.on { background: var(--rasen); border-color: var(--rasen); color: var(--on-rasen); }
 .tk-opt.on .tk-opt-n { color: var(--on-rasen); }
+.sports.ligen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
+.sports.ligen button { white-space: normal; line-height: 1.15; font-size: .84rem; padding: .5rem .3rem; min-height: 44px; }
+h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: var(--soft); margin: 1rem 0 .4rem; }
 </style>
 <meta name="description" content="Sporttipps für Fussball und Tennis: sichere, mittlere und riskante Tipps mit echten Quoten, Kombis und Tipprunden mit Kollegen. Nur mit Spielgeld, kostenlos.">
 
@@ -643,10 +646,12 @@ body.detail-offen { overflow: hidden; }
 
   <section class="view" id="v-tipps">
     <button class="geldbar" id="geldbar" hidden></button>
-    <div class="sports" role="group" aria-label="Sportart">
+    <div class="sports ligen" role="group" aria-label="Liga">
       <button aria-pressed="true" data-sport="alle">Alle</button>
-      <button aria-pressed="false" data-sport="fussball">Fussball</button>
-      <button aria-pressed="false" data-sport="hockey">Eishockey</button>
+      <button aria-pressed="false" data-sport="liga:Super League">Super League</button>
+      <button aria-pressed="false" data-sport="liga:Premier League">Premier League</button>
+      <button aria-pressed="false" data-sport="liga:Bundesliga">Bundesliga</button>
+      <button aria-pressed="false" data-sport="liga:Champions League">Champions League</button>
       <button aria-pressed="false" data-sport="tennis">Tennis</button>
     </div>
     <div class="subtabs" role="tablist">
@@ -656,11 +661,6 @@ body.detail-offen { overflow: hidden; }
     <div class="ritual" id="ritual" hidden></div>
 
     <div id="sub-einzel">
-      <div class="risk" role="group" aria-label="Wie willst du spielen?">
-        <button data-r="sicher">Sicher<small>gewinnt meistens</small></button>
-        <button data-r="mittel">Mittel<small>mehr Gewinn</small></button>
-        <button data-r="riskant">Riskant<small>Glückssache</small></button>
-      </div>
       <div id="teamBox" hidden></div>
       <h2 id="empTitle" class="h2klein">Sichere Tipps</h2>
       <p class="sub" id="empSub"></p>

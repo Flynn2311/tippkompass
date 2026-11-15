@@ -87,7 +87,7 @@ async function holen(url, mockName) {
   return null;
 }
 const ymd = (d) => d.toISOString().slice(0, 10).replace(/-/g, "");
-const zuerich = (d) => Number(new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", hour: "numeric", hour12: false }).format(d));
+const zuerich = (d) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Zurich", hour: "2-digit", hourCycle: "h23" }).format(d)); // Stunde 0–23
 const standIso = (d) => { const z = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Zurich" })); const off = Math.round((z - new Date(d.toLocaleString("en-US", { timeZone: "UTC" }))) / 6e4); const p = (n) => String(Math.abs(n)).padStart(2, "0"); return `${z.getFullYear()}-${p(z.getMonth() + 1)}-${p(z.getDate())}T${p(z.getHours())}:${p(z.getMinutes())}:00${off >= 0 ? "+" : "-"}${p(Math.floor(Math.abs(off) / 60))}:${p(Math.abs(off) % 60)}`; };
 
 let d;
@@ -169,7 +169,8 @@ async function quoten() {
   const seit = d.ODDS_AT ? (now - new Date(d.ODDS_AT)) / H : 99;
   const h = zuerich(now);
   if (!KEY) { log.push("Quoten: kein ODDS_API_KEY gesetzt, übersprungen"); return; }
-  if (!FORCE && !(seit >= 4 && h >= 8 && h <= 21)) return;
+  if (!Number.isFinite(h)) log.push("Quoten: Uhrzeit nicht lesbar");
+  if (!FORCE && !(seit >= 4 && h >= 8 && h <= 21)) { log.push(`Quoten: noch nicht fällig (vor ${seit.toFixed(1)} h geholt, ${h} Uhr)`); return; }
   let ok = false;
   const ligen = [...LIGEN];
   const sp = await holen(`https://api.the-odds-api.com/v4/sports/?apiKey=${KEY}`, "odds_sports"); // kostet keine Credits

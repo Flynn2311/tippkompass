@@ -298,7 +298,7 @@ function toggle(g, k) {
   toast(imSchein(g, k) ? "Zum Tippschein hinzugefügt" : "Entfernt");
 }
 const imSchein = (g, k) => schein.some((s) => s.g === g && s.k === k);
-const passt = (g) => (sport === "alle" || g.sport === sport) && offen(g);
+const passt = (g) => offen(g) && (sport === "alle" || (sport.startsWith("liga:") ? g.liga === sport.slice(5) : g.sport === sport));
 
 function tippKarte(g, e) {
   const o = out(g, e.k), st = stufe(o.p);
@@ -368,16 +368,21 @@ function renderEmpfehlungen() {
     mittel: { list: mittel, titel: "Mittleres Risiko", sub: "Mehr Gewinn, und der Favorit gewinnt trotzdem öfter als er verliert." },
     riskant: { list: riskant, titel: "Riskante Tipps", sub: "Knappe Spiele, fast wie ein Münzwurf. Viel Gewinn, oft daneben." },
   };
-  const st = STUFEN[risiko] || STUFEN.sicher;
-  const list = st.list;
-  $("#empTitle").textContent = st.titel;
-  const erw = list.length ? list.reduce((t, x) => t + out(x.g, x.e.k).p, 0) / list.length : 0;
-  $("#empSub").textContent = st.sub + (list.length ? " Etwa " + Math.round(erw) + " von 100 solchen Tipps gehen auf." : "");
+  // Alle offenen Spiele der gewählten Liga, mit dem Tipp der Statistik, nach Anpfiff sortiert
+  const list = SPIELE.filter(passt).map((g) => { const b = bestOf(g); return { g, e: { k: b.k, typ: "setzen", auto: true } }; }).sort((a, b) => (sport === "tennis" ? a.g.liga.localeCompare(b.g.liga) : 0) || new Date(a.g.zeit) - new Date(b.g.zeit));
+  const name = sport === "alle" ? "Alle Spiele" : sport === "tennis" ? "Tennis" : sport.slice(5);
+  $("#empTitle").textContent = name;
+  $("#empSub").textContent = list.length ? list.length + (list.length === 1 ? " Spiel" : " Spiele") + ", jeweils mit dem Tipp der Statistik. Unten auf jeder Karte kannst du auch selbst wählen." : "";
   const box = $("#emp"); box.replaceChildren();
-  if (!list.length) box.append(h("div", "empty", sport === "tennis" && !SPIELE.some((g) => g.sport === "tennis" && offen(g)) ? "Gerade läuft kein grosses Tennisturnier. Sobald eines startet, zum Beispiel ein Grand Slam oder die ATP Finals, erscheinen die Tipps hier automatisch." : "Gerade keine Tipps in dieser Stufe. Schau bei einer anderen Stufe."));
-  const max = mehrTipps ? list.length : 3;
-  list.slice(0, max).forEach(({ g, e }) => box.append(tippKarte(g, e)));
-  if (list.length > 3) { const m = h("button", "btn ghost", mehrTipps ? "Weniger anzeigen" : "Alle " + list.length + " Tipps anzeigen"); m.onclick = () => { mehrTipps = !mehrTipps; renderEmpfehlungen(); }; box.append(m); }
+  if (!list.length) box.append(h("div", "empty", sport === "tennis" ? "Gerade läuft kein grosses Tennisturnier. Sobald eines startet, zum Beispiel ein Grand Slam oder die ATP Finals, erscheinen die Spiele hier." : "In dieser Liga gibt es gerade keine offenen Spiele. Die nächsten erscheinen, sobald die Quoten da sind."));
+  const max = mehrTipps || sport !== "alle" ? list.length : 6;
+  let letzteGruppe = null;
+  list.slice(0, max).forEach(({ g, e }) => {
+    const gruppe = sport === "tennis" ? g.liga : null; // Tennis: nach Turnier gruppieren
+    if (gruppe && gruppe !== letzteGruppe) { box.append(h("h3", "turnier", gruppe)); letzteGruppe = gruppe; }
+    box.append(tippKarte(g, e));
+  });
+  if (list.length > max || (mehrTipps && sport === "alle" && list.length > 6)) { const m = h("button", "btn ghost", mehrTipps ? "Weniger anzeigen" : "Alle " + list.length + " Spiele anzeigen"); m.onclick = () => { mehrTipps = !mehrTipps; renderEmpfehlungen(); }; box.append(m); }
 
   // Kombi-Vorschlag passend zur gewählten Stufe
   const kb = $("#kombis"); kb.replaceChildren();
@@ -992,10 +997,6 @@ document.querySelectorAll(".sports button").forEach((b) => (b.onclick = () => {
   document.querySelectorAll(".sports button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
   renderTipps();
 }));
-document.querySelectorAll(".risk button").forEach((b) => {
-  b.setAttribute("aria-pressed", String(b.dataset.r === risiko));
-  b.onclick = () => { risiko = b.dataset.r; document.querySelectorAll(".risk button").forEach((x) => x.setAttribute("aria-pressed", String(x === b))); speichern(); renderEmpfehlungen(); };
-});
 const sw = $("#onlyClear"); sw.setAttribute("aria-pressed", String(onlyClear));
 sw.onclick = () => { onlyClear = !onlyClear; store.set("onlyClear", onlyClear); sw.setAttribute("aria-pressed", String(onlyClear)); renderList(); };
 let subTab = store.get("subTab", "einzel"); if (subTab === "alle") subTab = "einzel";
