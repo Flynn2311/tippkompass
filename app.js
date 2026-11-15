@@ -319,6 +319,20 @@ function tippKarte(g, e) {
   btn.onclick = () => toggle(g.id, e.k);
   const unten = h("div", "tk-unten"); unten.append(nums, btn);
   el.append(top, match, when, pick, unten);
+  // Selbst wählen: Heimsieg, Unentschieden oder Auswärtssieg
+  const wahl = h("div", "tk-wahl"); wahl.setAttribute("role", "group"); wahl.setAttribute("aria-label", "Selbst wählen");
+  wahl.append(h("span", "tk-wahl-t", "Oder selbst wählen:"));
+  const reihe = h("div", "tk-wahl-r" + (g.p.u == null ? " zwei" : ""));
+  outcomes(g).forEach((x) => {
+    const an = imSchein(g.id, x.k);
+    const b = h("button", "tk-opt" + (an ? " on" : "") + (x.k === e.k ? " empf" : ""));
+    b.setAttribute("aria-pressed", String(an));
+    b.append(h("span", "tk-opt-n", x.k === "u" ? "Unentschieden" : x.label), h("b", null, num(x.q, 2)));
+    b.title = (x.k === "u" ? "Unentschieden" : x.label + " gewinnt") + " · Chance " + pct(x.p);
+    b.onclick = () => toggle(g.id, x.k);
+    reihe.append(b);
+  });
+  wahl.append(reihe); el.append(wahl);
   if (e.note || tip) el.append(h("p", "tk-note", e.note || tip.text));
   return el;
 }

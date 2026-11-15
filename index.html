@@ -599,6 +599,16 @@ body.detail-offen { overflow: hidden; }
 .detail-st.gewonnen { border-color: var(--rasen); background: var(--rasen-lt); }
 .detail-st.verloren { border-color: var(--rot); background: var(--rot-lt); }
 .detail .spielinfo { display: block !important; }
+.tk-wahl { margin-top: .7rem; border-top: 1px dashed var(--line); padding-top: .6rem; }
+.tk-wahl-t { display: block; font-size: .78rem; color: var(--soft); margin-bottom: .35rem; }
+.tk-wahl-r { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
+.tk-wahl-r.zwei { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tk-opt { display: flex; flex-direction: column; align-items: center; gap: .1rem; min-height: 48px; padding: .35rem .25rem; border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 4px; font: inherit; cursor: pointer; }
+.tk-opt-n { font-size: .74rem; color: var(--soft); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tk-opt b { font-size: .95rem; }
+.tk-opt.empf { border-color: var(--ink); }
+.tk-opt.on { background: var(--rasen); border-color: var(--rasen); color: var(--on-rasen); }
+.tk-opt.on .tk-opt-n { color: var(--on-rasen); }
 </style>
 <meta name="description" content="Sporttipps für Fussball und Tennis: sichere, mittlere und riskante Tipps mit echten Quoten, Kombis und Tipprunden mit Kollegen. Nur mit Spielgeld, kostenlos.">
 
