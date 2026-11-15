@@ -692,6 +692,14 @@ function renderGruppe() {
   head.append(h("div", "lbl", "Gruppe"), h("div", "gname", gruppe.name), h("div", "lbl", "Startgeld " + fr(gruppe.start) + " pro Person" + (ende ? " · " + (vorbei ? "beendet am " : "läuft bis ") + fmtDate.format(ende) : "")));
   const code = h("div", "code"); code.append(h("span", null, "Einladungscode"), h("b", null, profil.gruppe));
   head.append(code);
+  const link = location.origin + location.pathname + "?g=" + encodeURIComponent(profil.gruppe);
+  const text = "Komm in unsere Tipp-Gruppe «" + gruppe.name + "» bei Tippkompass. Wir tippen mit Spielgeld, echtes Geld wird nie eingesetzt. Einfach hier öffnen, der Code " + profil.gruppe + " ist schon eingetragen: " + link;
+  const inv = h("div", "invite");
+  const wa = h("a", "btn wa", "Per WhatsApp einladen"); wa.href = "https://wa.me/?text=" + encodeURIComponent(text); wa.target = "_blank"; wa.rel = "noopener";
+  const mehr = h("button", "btn ghost", navigator.share ? "Anders teilen" : "Link kopieren");
+  mehr.onclick = async () => { try { if (navigator.share) await navigator.share({ title: "Tippkompass", text }); else { await navigator.clipboard.writeText(text); toast("Einladung kopiert"); } } catch {} };
+  inv.append(wa, mehr); head.append(inv);
+  store.set("einladung", null);
   box.append(head);
 
   const alle = [{ id: me || "ich", nick: profil.nick, wetten, kaeufe, aktiv, ich: true }, ...mitglieder.filter((m) => m.gruppe === profil.gruppe && m.id !== me)];
@@ -1260,4 +1268,17 @@ initDb();
     zeigeStand(); renderAll();
   } catch {}
 })();
-
+/* Einladungslink ?g=CODE */
+(function einladung() {
+  try {
+    const q = new URLSearchParams(location.search).get("g");
+    if (q) { store.set("einladung", q.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)); history.replaceState(null, "", location.pathname); }
+  } catch {}
+  const c = store.get("einladung", null); if (!c) return;
+  setTimeout(() => {
+    if (profil?.gruppe) { store.set("einladung", null); return; }
+    const inp = $("#gCode"); if (inp) inp.value = c;
+    toast("Einladung zur Gruppe " + c);
+    if (profil) { if (window.brauchtLogin && window.brauchtLogin(5)) return; openOnb(5); }
+  }, 900);
+})();
