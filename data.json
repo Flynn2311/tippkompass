@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-15T01:59:00+01:00",
+ "STAND": "2026-11-15T04:14:00+01:00",
  "SPIELE": [
   {
    "id": "n1",
@@ -583,7 +583,8 @@
    "p": {
     "h": 52.9,
     "a": 47.1
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n16",
@@ -595,7 +596,8 @@
    "p": {
     "h": 42.3,
     "a": 57.7
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n17",
@@ -607,7 +609,8 @@
    "p": {
     "h": 65.9,
     "a": 34.1
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n18",
@@ -619,7 +622,8 @@
    "p": {
     "h": 48.9,
     "a": 51.1
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n19",
@@ -631,7 +635,8 @@
    "p": {
     "h": 48.2,
     "a": 51.8
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n20",
@@ -643,7 +648,8 @@
    "p": {
     "h": 45.5,
     "a": 54.5
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n21",
@@ -655,7 +661,8 @@
    "p": {
     "h": 48.9,
     "a": 51.1
-   }
+   },
+   "res": "a"
   },
   {
    "id": "n22",
@@ -667,7 +674,8 @@
    "p": {
     "h": 55.4,
     "a": 44.6
-   }
+   },
+   "res": "a"
   },
   {
    "id": "o0248ebbc1e",
@@ -1214,6 +1222,62 @@
    "a": "Winnipeg Jets",
    "hs": 4,
    "as": 5
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Boston Bruins",
+   "a": "Minnesota Wild",
+   "hs": 2,
+   "as": 6
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Toronto Maple Leafs",
+   "a": "Edmonton Oilers",
+   "hs": 0,
+   "as": 1
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Montreal Canadiens",
+   "a": "Colorado Avalanche",
+   "hs": 1,
+   "as": 4
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Tampa Bay Lightning",
+   "a": "Detroit Red Wings",
+   "hs": 0,
+   "as": 2
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Pittsburgh Penguins",
+   "a": "Ottawa Senators",
+   "hs": 1,
+   "as": 4
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Washington Capitals",
+   "a": "New Jersey Devils",
+   "hs": 4,
+   "as": 7
+  },
+  {
+   "d": "2026-11-15",
+   "h": "Columbus Blue Jackets",
+   "a": "Philadelphia Flyers",
+   "hs": 3,
+   "as": 4
+  },
+  {
+   "d": "2026-11-15",
+   "h": "St. Louis Blues",
+   "a": "Florida Panthers",
+   "hs": 1,
+   "as": 4
   }
  ],
  "TIPP_DER_WOCHE": "e9",
