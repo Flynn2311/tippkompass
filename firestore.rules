@@ -1,20 +1,66 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Spielstand: jeder liest (für Ranglisten), nur du selbst schreibst deinen
+
+    function signedIn() { return request.auth != null; }
+    function isNick(v) { return v is string && v.size() >= 1 && v.size() <= 20; }
+    function isCode(v) { return v is string && v.size() >= 4 && v.size() <= 8; }
+    // Gruppe darf nur gesetzt werden, wenn sie existiert
+    function okGruppe(v) { return v == null || (isCode(v) && exists(/databases/$(database)/documents/groups/$(v))); }
+    function okListe(v, max) { return v is list && v.size() <= max; }
+    function meineGruppe() {
+      return get(/databases/$(database)/documents/members/$(request.auth.uid)).data.gruppe;
+    }
+
+    // Privater Spielstand: nur du selbst liest und schreibst ihn
     match /players/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == uid;
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nick', 'gruppe', 'wetten', 'solo', 'gespielt', 'kaeufe', 'aktiv', 'resetTs', 'xpBank', 'design', 'team', 'at'])
+        && isNick(request.resource.data.nick)
+        && okGruppe(request.resource.data.get('gruppe', null))
+        && okListe(request.resource.data.get('wetten', []), 1000)
+        && okListe(request.resource.data.get('solo', []), 1000)
+        && okListe(request.resource.data.get('gespielt', []), 250)
+        && okListe(request.resource.data.get('kaeufe', []), 500);
     }
-    // Gruppen: anmelden zum Lesen und Erstellen, ändern nur wer sie erstellt hat
+
+    // Öffentlicher Teil für die Gruppe: Spitzname, Gruppen-Wetten, Käufe (Clown, Schild, Spion), Titel/Farbe
+    // Lesen dürfen nur Mitglieder derselben Gruppe
+    match /members/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid
+        || (resource.data.gruppe != null && resource.data.gruppe == meineGruppe()));
+      allow delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nick', 'gruppe', 'wetten', 'kaeufe', 'aktiv', 'at'])
+        && isNick(request.resource.data.nick)
+        && okGruppe(request.resource.data.get('gruppe', null))
+        && okListe(request.resource.data.get('wetten', []), 1000)
+        && okListe(request.resource.data.get('kaeufe', []), 500);
+    }
+
+    // Gruppen: Wer den Code kennt, kann sie öffnen. Auflisten aller Gruppen geht nicht.
+    // Ändern und löschen darf nur, wer sie erstellt hat; der Ersteller lässt sich nicht ändern.
     match /groups/{code} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.by == request.auth.uid;
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && isCode(code)
+        && request.resource.data.keys().hasOnly(['name', 'start', 'ende', 'by', 'at'])
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 30
+        && request.resource.data.start is number && request.resource.data.start >= 10 && request.resource.data.start <= 100000
+        && (request.resource.data.get('ende', null) == null || request.resource.data.ende is string || request.resource.data.ende is number);
+      allow update: if signedIn() && resource.data.by == request.auth.uid
+        && request.resource.data.by == resource.data.by
+        && request.resource.data.keys().hasOnly(['name', 'start', 'ende', 'by', 'at'])
+        && request.resource.data.name is string && request.resource.data.name.size() >= 1 && request.resource.data.name.size() <= 30
+        && request.resource.data.start is number && request.resource.data.start >= 10 && request.resource.data.start <= 100000;
+      allow delete: if signedIn() && resource.data.by == request.auth.uid;
     }
-    // Deine Markierungen «Setzen / Finger weg»: alle lesen, niemand schreibt (später deine E-Mail eintragen)
-    match /meta/{doc} {
-      allow read: if true;
-      allow write: if false;
+
+    // Alles andere ist gesperrt
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

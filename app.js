@@ -55,7 +55,7 @@ let TOPS = [
   { id: "c6", wahl: "h", text: "City gewann in der Champions League 3:2 in Leipzig, verlor aber in der Liga 1:3 in Nottingham. Favorit, aber kein Selbstläufer." },
 ];
 
-/* Letzte Resultate (für die Form-Analyse), Quelle: Sportradar */
+/* Letzte Resultate (für die Form-Analyse), Quelle: ESPN */
 let RESULTATE = [
   ["2026-11-01","Eintracht Frankfurt","Hamburger SV",3,1],["2026-11-06","Hamburger SV","Gladbach",3,1],["2026-11-07","Borussia Dortmund","SV Elversberg",2,1],
   ["2026-11-07","RB Leipzig","FC Augsburg",5,2],["2026-11-07","FSV Mainz","Bayern München",1,2],["2026-11-07","SC Paderborn","Eintracht Frankfurt",2,2],
@@ -102,9 +102,7 @@ const fmtDate = new Intl.DateTimeFormat("de-CH", { day: "numeric", month: "long"
 const pct = (v) => Math.round(v) + " %";
 const num = (n, d = 0) => n.toLocaleString("de-CH", { minimumFractionDigits: d, maximumFractionDigits: d });
 const fr = (n) => "Fr. " + num(n, 2);
-const now = new Date();
 const MARGE = 0.06;
-let TIPP_DER_WOCHE = "e9";          // Spiel für die Abstimmung (bei jedem Update neu wählen)
 const RHYTHMUS = "Quoten und Resultate 3x täglich aktualisiert · Rückblick jeden Montag";
 
 const store = {
@@ -120,22 +118,21 @@ let schein = [];
 let sport = "alle";
 let onlyClear = store.get("onlyClear", false);
 let mitglieder = [];                       // andere Spieler aus der Datenbank
-let flynn = {};                            // {spielId: {k, typ: "setzen"|"finger"}}
+                            // {spielId: {k, typ: "setzen"|"finger"}}
 let gruppe = null;                         // {name, start, ende}
 let offenMitglied = null;
 let mehrTipps = false;
-let votes = store.get("votes", {});   // eigene Stimmen {spielId: k}
 let team = store.get("team", "");
 let gespielt = store.get("gespielt", []);
 const SOLO_START = 1000;
+const uniq = (a) => { const s = new Set(); return a.filter((w) => (s.has(w.id) ? false : (s.add(w.id), true))); };
 let solo = store.get("solo", []);            // eigene Spielgeld-Wetten ohne Gruppe [{id, ts, einsatz, picks}]
 let konto_ziel = store.get("konto_ziel", "solo");
 let kaeufe = store.get("kaeufe", []);         // Shop-Käufe [{ts, id, preis, an?}]
 let aktiv = store.get("aktiv", { titel: null, farbe: null });
 let xpBank = store.get("xpBank", 0); let design = store.get("design", "zeitung");
 let resetTs = store.get("resetTs", 0);        // Spielgeld-Neustart: ältere Käufe zählen nicht mehr // "solo" | "gruppe"  // für Sporttip kopierte Tipps [{ts, picks:[{g,k,q}]}]
-let db = null, me = null, isOwner = false, authUser = null, fb = null;
-const OWNER_EMAILS = []; // hier deine E-Mail eintragen, damit du «Setzen/Finger weg» markieren kannst
+let db = null, me = null, authUser = null, fb = null;
 
 /* ---------- Spiele und Quoten ---------- */
 function quote(p) { return Math.max(1.03, Math.round(100 / p * (1 - MARGE) * 100) / 100); }
@@ -146,7 +143,8 @@ function outcomes(g) {
   return o.map((x) => ({ ...x, q: quote(x.p) }));
 }
 const bestOf = (g) => outcomes(g).reduce((a, b) => (b.p > a.p ? b : a));
-const spiel = (id) => SPIELE.find((x) => x.id === id);
+let ARCHIV = []; // abgerechnete Spiele älter als 7 Tage (res "x" = abgesagt)
+const spiel = (id) => SPIELE.find((x) => x.id === id) || ARCHIV.find((x) => x.id === id);
 const offen = (g) => !g.res && new Date(g.zeit).getTime() > Date.now();
 // Uhrzeit vom Server (nicht vom Handy), damit niemand die Uhr zurückstellt
 async function serverZeit() {
@@ -166,10 +164,8 @@ function stufe(p) {
   return { t: "Riskant ●○○", c: "s-riskant" };
 }
 
-/* Eigene Einschätzung. Ohne eigene Markierung gilt der Daten-Vorschlag. */
+/* Einschätzung aus den Wahrscheinlichkeiten */
 function einschaetzung(g) {
-  const f = flynn[g.id];
-  if (f) return { ...f, auto: false };
   const b = bestOf(g);
   if (b.p >= 55) return { k: b.k, typ: "setzen", auto: true };
   if (b.p < 45) return { typ: "finger", auto: true };
@@ -179,12 +175,15 @@ function einschaetzung(g) {
 /* ---------- Gruppen-Wetten ---------- */
 function status(w) {
   if (w.picks.some((p) => gesperrt(w, p))) return "ungueltig";
-  let offen = false, falsch = 0;
+  let offen = false, falsch = 0, weg = false;
   for (const p of w.picks) {
     const g = spiel(p.g);
+    // Spiel abgesagt, oder seit über 10 Tagen nicht mehr in den Daten: Wette ungültig, Einsatz zurück
+    if ((g && g.res === "x") || (!g && Date.now() - (w.srv || w.ts) > 10 * 864e5)) { weg = true; continue; }
     if (!g || !g.res) { offen = true; continue; }
     if (g.res !== p.k) falsch++;
   }
+  if (weg) return "ungueltig";
   if (falsch === 0) return offen ? "offen" : "gewonnen";
   if (w.vers && w.picks.length > 1 && falsch === 1) return offen ? "offen" : "zurueck";
   return "verloren";
@@ -204,7 +203,7 @@ function konto(list, start) {
 const wocheVon = (d) => { const x = new Date(d); const day = (x.getDay() + 6) % 7; x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - day); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); };
 function picksAus(list) {
   const out = [];
-  (list || []).forEach((w) => w.picks.forEach((p) => { const g = spiel(p.g); if (g && g.res) out.push({ g, k: p.k, ok: g.res === p.k, w }); }));
+  (list || []).forEach((w) => w.picks.forEach((p) => { const g = spiel(p.g); if (g && g.res && g.res !== "x") out.push({ g, k: p.k, ok: g.res === p.k, w }); }));
   return out.sort((a, b) => new Date(a.g.zeit) - new Date(b.g.zeit));
 }
 function maxSerie(ps) { let m = 0, c = 0; ps.forEach((p) => { c = p.ok ? c + 1 : 0; m = Math.max(m, c); }); return m; }
@@ -237,7 +236,7 @@ function titel(rows) {
   const wk = letzteWoche(); const t = {};
   if (!wk) return t;
   const gew = rows.map((m) => ({ m, v: wochenGewinn(m.wetten, wk) })).sort((a, b) => b.v - a.v);
-  if (gew[0] && gew[0].v > 0) (t[gew[0].m.id] ||= []).push("Tippkönig der Woche");
+  if (gew[0] && gew[0].v > 0) (t[gew[0].m.id] ||= []).push("Pokal: Tippkönig der Woche");
   let best = null;
   rows.forEach((m) => (m.wetten || []).forEach((w) => { if (w.picks.length > 1 && status(w) === "gewonnen" && (!best || wQuote(w) > best.q)) best = { id: m.id, q: wQuote(w) }; }));
   if (best) (t[best.id] ||= []).push("Beste Kombi");
@@ -264,38 +263,11 @@ function rueckblick(rows) {
   if (best) add("", "Bester Tipp", best.n + " mit Quote " + num(best.q, 2));
   const ueb = spiele.filter((g) => g.res !== bestOf(g).k).sort((a, b) => out(a, a.res).p - out(b, b.res).p)[0];
   if (ueb) add("", "Grösste Überraschung", label(ueb, ueb.res) + (ueb.res === "u" ? " bei " + ueb.h + " – " + ueb.a : "") + " (nur " + pct(out(ueb, ueb.res).p) + ")");
-  const fl = spiele.map((g) => ({ g, e: flynn[g.id] })).filter((x) => x.e && x.e.typ === "setzen");
-  if (fl.length) add("", "Meine Tipps", fl.filter((x) => x.g.res === x.e.k).length + " von " + fl.length + " richtig");
   if (!grid.children.length) card.append(h("div", "rb-t", "Diese Woche gab es noch keine ausgewerteten Wetten."));
   card.append(grid);
   return card;
 }
 
-/* Tipp der Woche: alle stimmen ab, ohne Einsatz */
-function tippDerWoche() {
-  const g = spiel(TIPP_DER_WOCHE);
-  const box = $("#tdw"); box.replaceChildren();
-  if (!g) { box.hidden = true; return; }
-  box.hidden = false;
-  box.append(h("div", "rb-k", "Tipp der Woche · Abstimmung ohne Einsatz"), h("div", "tdw-m", g.h + " – " + g.a), h("div", "tk-when", g.liga + " · " + fmtShort.format(new Date(g.zeit)) + ", " + fmtTime.format(new Date(g.zeit))));
-  const alle = [...mitglieder.filter((m) => m.id !== me).map((m) => m.votes?.[g.id]).filter(Boolean)];
-  if (votes[g.id]) alle.push(votes[g.id]);
-  const n = alle.length;
-  const row = h("div", "tdw-opts");
-  outcomes(g).forEach((o) => {
-    const c = alle.filter((v) => v === o.k).length;
-    const b = h("button", "tdw-o");
-    b.setAttribute("aria-pressed", String(votes[g.id] === o.k));
-    const fill = h("i"); fill.style.width = (n ? c / n * 100 : 0) + "%";
-    b.append(fill, h("span", null, o.short + " · " + (o.k === "u" ? "Unentschieden" : o.label)), h("b", null, votes[g.id] ? (n ? Math.round(c / n * 100) : 0) + " %" : ""));
-    b.disabled = !offen(g) || g.res;
-    b.onclick = () => { votes[g.id] = o.k; store.set("votes", votes); speichern(); tippDerWoche(); toast("Stimme gezählt"); };
-    row.append(b);
-  });
-  box.append(row);
-  if (g.res) box.append(h("div", "tk-when", "Resultat: " + label(g, g.res) + (votes[g.id] ? (votes[g.id] === g.res ? " · Du lagst richtig!" : " · Diesmal daneben.") : "")));
-  else box.append(h("div", "tk-when", votes[g.id] ? n + (n === 1 ? " Stimme" : " Stimmen") + " bisher" : "Stimm ab, dann siehst du, was die anderen tippen."));
-}
 
 /* Lieblingsteam */
 const alleTeams = () => [...new Set(SPIELE.flatMap((g) => [g.h, g.a]))].sort((a, b) => a.localeCompare(b, "de"));
@@ -373,10 +345,9 @@ function renderEmpfehlungen() {
   const P = ({ g, e }) => out(g, e.k).p;
   const sicher = setzen.filter((x) => P(x) >= 70).sort((a, b) => P(b) - P(a));
   const mittel = setzen.filter((x) => P(x) >= 55 && P(x) < 70).sort((a, b) => P(b) - P(a));
-  // Riskant: offene Spiele mit leichtem Favoriten (45–55 %), dazu eigene Tipps mit tiefer Chance
+  // Riskant: offene Spiele mit leichtem Favoriten (45–55 %)
   const riskant = [
-    ...SPIELE.filter(passt).filter((g) => !flynn[g.id]).map((g) => ({ g, b: bestOf(g) })).filter(({ b }) => b.p >= 45 && b.p < 55).map(({ g, b }) => ({ g, e: { k: b.k, typ: "setzen", auto: true } })),
-    ...setzen.filter((x) => !x.e.auto && P(x) < 55),
+    ...SPIELE.filter(passt).map((g) => ({ g, b: bestOf(g) })).filter(({ b }) => b.p >= 45 && b.p < 55).map(({ g, b }) => ({ g, e: { k: b.k, typ: "setzen", auto: true } })),
   ].sort((a, b) => out(b.g, b.e.k).q - out(a.g, a.e.k).q);
   const STUFEN = {
     sicher: { list: sicher, titel: "Sichere Tipps", sub: "Klare Favoriten. Du gewinnst wenig, aber meistens." },
@@ -419,17 +390,6 @@ function renderEmpfehlungen() {
   $("#glueckWrap").hidden = gq < 50 || glueck.length < 3;
   if (gq >= 50 && glueck.length >= 3) gb.append(kombiEl({ name: "Glückskombi", info: glueck.length + " Spiele, alle müssen aufgehen.", legs: glueck, gross: true, einsatz: 1 }));
 
-  // Finger weg
-  const fw = SPIELE.filter(passt).map((g) => ({ g, e: einschaetzung(g) })).filter((x) => x.e && x.e.typ === "finger");
-  const fb = $("#finger"); fb.replaceChildren();
-  $("#fingerWrap").hidden = !fw.length;
-  fw.forEach(({ g, e }) => {
-    const el = h("div", "fw");
-    const b = bestOf(g);
-    el.append(h("div", "fw-m", g.h + " – " + g.a), h("div", "fw-i", g.liga + " · " + fmtShort.format(new Date(g.zeit)) + " · Favorit nur " + pct(b.p)));
-    if (e.note) el.append(h("div", "fw-i", e.note));
-    fb.append(el);
-  });
 }
 
 function gameCard(g) {
@@ -463,14 +423,6 @@ function gameCard(g) {
     an.append(tf);
   });
   an.append(h("div", "last", "S = Sieg, U = Unentschieden, N = Niederlage"));
-  if (isOwner) {
-    const row = h("div", "owner-row"); row.append(h("span", null, "Deine Einschätzung:"));
-    const cur = flynn[g.id];
-    os.forEach((o) => { const b = h("button", "mini", "Setzen " + o.short); b.setAttribute("aria-pressed", String(cur?.typ === "setzen" && cur.k === o.k)); b.onclick = () => setFlynn(g.id, { typ: "setzen", k: o.k }); row.append(b); });
-    const fwb = h("button", "mini", "Finger weg"); fwb.setAttribute("aria-pressed", String(cur?.typ === "finger")); fwb.onclick = () => setFlynn(g.id, { typ: "finger" }); row.append(fwb);
-    if (cur) { const r = h("button", "mini", "Zurück zum Daten-Vorschlag"); r.onclick = () => setFlynn(g.id, null); row.append(r); }
-    an.append(row);
-  }
   more.onclick = () => { const o = more.getAttribute("aria-expanded") === "true"; more.setAttribute("aria-expanded", String(!o)); an.hidden = o; };
   el.append(head, h("div", "g-teams", g.h + " – " + g.a), bar, opts, vd, more, an);
   return el;
@@ -501,7 +453,7 @@ function renderBilanz() {
 function renderGeldbar() {
   const b = $("#geldbar"); if (!b) return; b.replaceChildren();
   if (!profil) { b.hidden = true; return; } b.hidden = false;
-  const offeneW = [...solo, ...wetten].filter((w) => status(w) === "offen").length;
+  const offeneW = uniq([...solo, ...wetten]).filter((w) => status(w) === "offen").length;
   b.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("span", null, offeneW ? "· " + offeneW + (offeneW === 1 ? " Wette offen" : " Wetten offen") : "· keine Wette offen"), h("span", null, "· Stufe " + lvl().n), h("span", "gb-pfeil", "→"));
   b.onclick = () => go("schein");
 }
@@ -510,7 +462,7 @@ function sportKnoepfe() {
   const b = document.querySelector('.sports button[data-sport="hockey"]'); if (b) b.hidden = !hock;
   if (!hock && sport === "hockey") { sport = "alle"; document.querySelectorAll(".sports button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.sport === "alle"))); }
 }
-function renderTipps() { sportKnoepfe(); renderGeldbar(); tippDerWoche(); renderTeam(); renderEmpfehlungen(); renderList(); renderBilanz(); const nf = $("#finger").children.length; $("#fingerWrap").hidden = !nf; $("#fwToggle").textContent = "Finger weg: " + nf + (nf === 1 ? " Spiel ist" : " Spiele sind") + " zu offen"; }
+function renderTipps() { sportKnoepfe(); renderGeldbar(); renderTeam(); renderEmpfehlungen(); renderList(); renderBilanz(); }
 
 /* ================================================================
    Tippschein
@@ -559,49 +511,48 @@ function renderSchein() {
   sum.append(copy);
   // Setzen mit Spielgeld: eigenes Konto oder Gruppe
   const hatGruppe = !!(profil?.gruppe && gruppe);
-  if (!hatGruppe) konto_ziel = "solo";
   const form = h("div", "stake");
-  if (hatGruppe) {
-    const sel = h("div", "ziel");
-    [["solo", "Mein Spielgeld"], ["gruppe", "Gruppe «" + gruppe.name + "»"]].forEach(([v, t]) => { const b = h("button", null, t); b.setAttribute("aria-pressed", String(konto_ziel === v)); b.onclick = () => { konto_ziel = v; speichern(); renderSchein(); }; sel.append(b); });
-    form.append(sel);
-  }
-  const zielGruppe = konto_ziel === "gruppe" && hatGruppe;
-  const k = zielGruppe ? konto(wetten, gruppe.start) : konto(solo, SOLO_START);
-  const frei = Math.max(0, Math.floor((zielGruppe ? k.stand : spielgeld()) * 100) / 100);
-  const lab = h("label", null, (zielGruppe ? "In der Gruppe setzen" : "Mit Spielgeld setzen") + " · verfügbar " + fr(frei)); lab.htmlFor = "einsatz";
+  const gk = hatGruppe ? konto(wetten, gruppe.start) : null;
+  const ende = hatGruppe && gruppe.ende && new Date(gruppe.ende) < new Date();
+  const gOk = hatGruppe && !ende;
+  const geldS = Math.max(0, Math.floor(spielgeld() * 100) / 100), geldG = gOk ? Math.max(0, Math.floor(gk.stand * 100) / 100) : 0;
+  const frei = Math.max(geldS, geldG);
+  const lab = h("label", null, gOk ? "Einsatz · Spielgeld " + fr(geldS) + " · Gruppe " + fr(geldG) : "Mit Spielgeld setzen · verfügbar " + fr(geldS)); lab.htmlFor = "einsatz";
   const inp = h("input"); inp.id = "einsatz"; inp.type = "text"; inp.inputMode = "decimal"; inp.autocomplete = "off"; inp.maxLength = 9; inp.value = Math.min(10, Math.floor(frei));
   let useVers = false, useBoost = false;
   const betrag = () => { const t = String(inp.value).trim().replace(/['’\s]/g, "").replace(",", "."); return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN; };
   const gew = h("div", "lbl"); const upd = () => { const v = betrag(); gew.textContent = isNaN(v) ? "Gib einen Betrag in Franken ein, z. B. 10" : "Möglicher Gewinn: " + fr(v * q * (useBoost ? 1.1 : 1)); }; inp.oninput = upd; upd();
-  const btn = h("button", "place", zielGruppe ? "In «" + gruppe.name + "» setzen" : "Mit Spielgeld setzen");
-  const ende = zielGruppe && gruppe.ende && new Date(gruppe.ende) < now;
-  btn.disabled = frei < 1 || ende;
-  if (ende) btn.textContent = "Die Runde ist vorbei";
-  btn.onclick = async () => {
+  const MODI = gOk ? [["solo", "Selber", geldS], ["gruppe", "In Gruppe", geldG], ["beide", "Beides", Math.min(geldS, geldG)]] : [["solo", "Setzen", geldS]];
+  const reihe = h("div", "place-row" + (MODI.length > 1 ? " drei" : ""));
+  const knoepfe = [];
+  const setzen = async (modus, max) => {
     const e = Math.round((betrag() || 0) * 100) / 100;
     if (isNaN(betrag())) { toast("Gib einen Betrag ein, z. B. 10"); inp.focus(); return; }
     if (e < 1) { toast("Der Einsatz muss mindestens Fr. 1 sein"); inp.focus(); return; }
-    if (e > frei) { toast("So viel hast du nicht mehr: " + fr(frei)); return; }
-    btn.disabled = true;
+    if (e > max) { toast("So viel hast du " + (modus === "gruppe" ? "in der Gruppe" : modus === "beide" ? "nicht in beiden Töpfen" : "nicht mehr") + ": " + fr(max)); return; }
+    knoepfe.forEach((x) => (x.disabled = true));
     const srv = await serverZeit();
-    btn.disabled = false;
+    knoepfe.forEach((x) => (x.disabled = false));
     if (!srv) { toast("Keine Verbindung. Setzen geht nur mit Internet."); return; }
     const zuSpaet = schein.filter((s) => { const g = spiel(s.g); return !g || g.res || new Date(g.zeit).getTime() <= srv; });
     if (zuSpaet.length) { schein = schein.filter((s) => !zuSpaet.includes(s)); speichern(); renderAll(); toast(zuSpaet.length === 1 ? "Ein Spiel hat schon angefangen und wurde entfernt" : zuSpaet.length + " Spiele haben schon angefangen und wurden entfernt"); return; }
     const w = { id: "w" + Date.now(), ts: srv, srv, einsatz: e, picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) };
     if (useVers) w.vers = true; if (useBoost) w.boost = true;
-    (zielGruppe ? wetten : solo).push(w);
-    schein = []; speichern(); renderAll(); toast("Gesetzt");
+    if (modus === "beide") { w.beide = true; wetten.push({ ...w, picks: w.picks.map((p) => ({ ...p })) }); solo.push(w); }
+    else (modus === "gruppe" ? wetten : solo).push(w);
+    schein = []; speichern(); renderAll(); toast(modus === "beide" ? "Gesetzt, zählt für beides" : modus === "gruppe" ? "In der Gruppe gesetzt" : "Gesetzt");
   };
+  MODI.forEach(([m, t, max]) => { const b = h("button", "place", t); b.disabled = max < 1; b.onclick = () => setzen(m, max); knoepfe.push(b); reihe.append(b); });
+  const btn = reihe;
   const jk = h("div", "joker-opts");
   const jopt = (name, anz, onc) => { const b = h("button", "jopt", name + " · " + anz + " übrig"); b.setAttribute("aria-pressed", "false"); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); onc(on); }; jk.append(b); };
   if (jokerUebrig("j-vers") > 0 && schein.length > 1) jopt("Versicherung", jokerUebrig("j-vers"), (on) => (useVers = on));
   if (jokerUebrig("j-boost") > 0) jopt("Quoten-Boost +10 %", jokerUebrig("j-boost"), (on) => { useBoost = on; upd(); });
   form.append(lab, inp, gew);
   if (jk.children.length) form.append(jk);
-  form.append(btn);
-  if (!zielGruppe && frei < 1 && !k.offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { xpBank += gewinnPlus(solo); solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
+  form.append(reihe);
+  if (gOk) form.append(h("p", "sub ziel-info", "Selber: nur dein Spielgeld. In Gruppe: nur die Gruppen-Rangliste. Beides: zählt für beide gleichzeitig."));
+  if (spielgeld() < 1 && !konto(solo, SOLO_START).offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { xpBank += gewinnPlus(solo.filter((w) => !wetten.some((x) => x.id === w.id))); solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
   const nur = h("button", "btn ghost", "Nur tippen, ohne Einsatz"); nur.style.marginTop = ".5rem";
   nur.onclick = async () => {
     const srv = await serverZeit(); if (!srv) { toast("Keine Verbindung. Tippen geht nur mit Internet."); return; }
@@ -625,7 +576,8 @@ function renderMeineWetten() {
     solo.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w)));
     if (!solo.length && !wetten.length) box.append(h("p", "sub", "Noch keine Wetten. Sobald du etwas setzt, siehst du es hier."));
   }
-  if (wetten.length) { box.append(h("h3", null, "In der Gruppe")); wetten.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w))); }
+  const nurG = wetten.filter((w) => !solo.some((x) => x.id === w.id));
+  if (nurG.length) { box.append(h("h3", null, "Nur in der Gruppe")); nurG.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w))); }
 }
 function wettKarte(w) {
   const st = status(w), q = wQuote(w);
@@ -633,10 +585,11 @@ function wettKarte(w) {
   const top = h("div", "bet-top");
   top.append(h("b", null, (w.picks.length > 1 ? "Kombi · " : "") + fr(w.einsatz) + " auf " + num(q, 2)), h("span", "st " + st, st === "offen" ? "Offen" : st === "gewonnen" ? "+" + fr(w.einsatz * q - w.einsatz) : st === "zurueck" ? "Einsatz zurück" : st === "ungueltig" ? "Ungültig, Einsatz zurück" : "−" + fr(w.einsatz)));
   el.append(top);
-  if (w.vers || w.boost) { const t = h("div", "jtags"); if (w.vers) t.append(h("small", null, "Versichert")); if (w.boost) t.append(h("small", null, "Boost +10 %")); el.append(t); }
+  if (w.vers || w.boost || w.beide) { const t = h("div", "jtags"); if (w.beide) t.append(h("small", null, "Zählt auch in der Gruppe")); if (w.vers) t.append(h("small", null, "Versichert")); if (w.boost) t.append(h("small", null, "Boost +10 %")); el.append(t); }
   w.picks.forEach((p) => {
     const g = spiel(p.g);
-    if (!g) { el.append(h("div", "vs", "· Spiel nicht mehr in den Daten")); return; }
+    if (!g) { el.append(h("div", "vs", "· Spiel nicht mehr in den Daten. Nach 10 Tagen gibt es den Einsatz zurück.")); return; }
+    if (g.res === "x") { el.append(h("div", "vs", "· " + g.h + " – " + g.a + ": abgesagt, Einsatz zurück")); return; }
     const zeile = h("button", "pick-btn"); zeile.setAttribute("aria-expanded", "false");
     zeile.append(h("span", "pk-ic " + (g.res ? (g.res === p.k ? "ok" : "falsch") : "offen"), g.res ? (g.res === p.k ? "✓" : "✗") : "·"), h("span", "pk-t", label(g, p.k) + (p.k === "u" ? "" : " gewinnt")), h("small", null, g.h + " – " + g.a), h("span", "pk-pf", "Infos"));
     const info = spielInfo(g, p.k); info.hidden = true;
@@ -687,11 +640,19 @@ function renderGruppe() {
     c.append(b1, b2); box.append(c); return;
   }
   const ende = gruppe.ende ? new Date(gruppe.ende) : null;
-  const vorbei = ende && ende < now;
+  const vorbei = ende && ende < new Date();
   const head = h("div", "g-hero");
   head.append(h("div", "lbl", "Gruppe"), h("div", "gname", gruppe.name), h("div", "lbl", "Startgeld " + fr(gruppe.start) + " pro Person" + (ende ? " · " + (vorbei ? "beendet am " : "läuft bis ") + fmtDate.format(ende) : "")));
   const code = h("div", "code"); code.append(h("span", null, "Einladungscode"), h("b", null, profil.gruppe));
   head.append(code);
+  const link = location.origin + location.pathname + "?g=" + encodeURIComponent(profil.gruppe);
+  const text = "Komm in unsere Tipp-Gruppe «" + gruppe.name + "» bei Tippkompass. Wir tippen mit Spielgeld, echtes Geld wird nie eingesetzt. Einfach hier öffnen, der Code " + profil.gruppe + " ist schon eingetragen: " + link;
+  const inv = h("div", "invite");
+  const wa = h("a", "btn wa", "Per WhatsApp einladen"); wa.href = "https://wa.me/?text=" + encodeURIComponent(text); wa.target = "_blank"; wa.rel = "noopener";
+  const mehr = h("button", "btn ghost", navigator.share ? "Anders teilen" : "Link kopieren");
+  mehr.onclick = async () => { try { if (navigator.share) await navigator.share({ title: "Tippkompass", text }); else { await navigator.clipboard.writeText(text); toast("Einladung kopiert"); } } catch {} };
+  inv.append(wa, mehr); head.append(inv);
+  store.set("einladung", null);
   box.append(head);
 
   const alle = [{ id: me || "ich", nick: profil.nick, wetten, kaeufe, aktiv, ich: true }, ...mitglieder.filter((m) => m.gruppe === profil.gruppe && m.id !== me)];
@@ -709,7 +670,7 @@ function renderGruppe() {
     if (hatClown(m.ich ? me || "ich" : m.id)) nmTxt.append(h("span", "clown", " 🤡"));
     nm.append(nmTxt);
     const gt = gekaufterTitel(m.ich ? aktiv : m.aktiv); if (gt) { const ts0 = h("span", "titles shoptitel"); ts0.append(h("small", null, gt)); nm.append(ts0); }
-    if (tt[m.id]) { const ts = h("span", "titles"); tt[m.id].forEach((x) => ts.append(h("small", null, x))); nm.append(ts); }
+    if (tt[m.id]) { const ts = h("span", "titles"); tt[m.id].forEach((x) => ts.append(h("small", x.startsWith("Pokal") ? "pokal" : null, x))); nm.append(ts); }
     btn.append(h("span", "pos", String(i + 1)), nm);
     const right = h("span", "rk-r"); right.append(h("b", null, fr(m.k.stand)), h("small", m.k.gewinn >= 0 ? "pos" : "neg", (m.k.gewinn >= 0 ? "+" : "−") + fr(Math.abs(m.k.gewinn)) + " gewonnen"));
     btn.append(right);
@@ -718,7 +679,11 @@ function renderGruppe() {
     if (offenMitglied === m.id) {
       const d = h("div", "rk-detail");
       d.append(h("div", "sub", m.k.treffer + " von " + m.k.fertig + " Wetten getroffen · " + m.k.offen + " offen · " + fr(m.k.einsatzOffen) + " im Spiel"));
-      (m.wetten || []).slice().sort((a, b) => b.ts - a.ts).forEach((w) => d.append(wettKarte(w)));
+      const geheim = (w) => !m.ich && !spionAktiv(m.id) && w.picks.some((p) => { const g = spiel(p.g); return g && offen(g); });
+      let versteckt = 0;
+      (m.wetten || []).slice().sort((a, b) => b.ts - a.ts).forEach((w) => { if (geheim(w)) versteckt++; else d.append(wettKarte(w)); });
+      if (versteckt) d.append(h("div", "sub geheim", versteckt + (versteckt === 1 ? " Tipp ist" : " Tipps sind") + " noch geheim und sichtbar ab Anpfiff. Mit dem Spion aus dem Shop siehst du sie früher."));
+      if (!m.ich && spionAktiv(m.id)) d.prepend(h("div", "sub geheim", "Spion aktiv: du siehst die offenen Tipps."));
       if (!(m.wetten || []).length) d.append(h("div", "sub", "Noch keine Wetten."));
       li.append(d);
     }
@@ -728,7 +693,7 @@ function renderGruppe() {
   box.append(h("h3", "sec", "Deine Abzeichen"));
   const ab = h("div", "badges");
   abzeichen(wetten).forEach((a) => { const d = h("div", "bdg" + (a.ok ? " ok" : "")); d.append(h("span", "bdg-ic", a.ic), h("b", null, a.t), h("small", null, a.d)); ab.append(d); });
-  box.append(ab, h("p", "sub", "Abzeichen gibt es nur für richtige Tipps, nie dafür, wie viel du setzt."));
+  box.append(ab, h("p", "sub", "Abzeichen gibt es nur für richtige Tipps, nie dafür, wie viel du setzt."), h("p", "sub", "Die Rangliste ist ein Spass unter Kollegen: Die Spielstände werden auf den Handys berechnet und nicht von einem Server geprüft."));
   if (rows.length < 2) box.append(h("p", "sub", "Schick deinen Kollegen den Link zur App und den Code " + profil.gruppe + ", dann erscheinen sie hier."));
 }
 
@@ -742,7 +707,7 @@ function renderProfil() {
   const c = h("div", "card"); c.append(h("h3", null, "Gruppe"));
   if (profil.gruppe) {
     const lv = h("button", "btn ghost", "Gruppe verlassen");
-    lv.onclick = () => { if (lv.dataset.ok) { profil.gruppe = null; gruppe = null; wetten = []; speichern(); renderAll(); } else { lv.dataset.ok = "1"; lv.textContent = "Sicher? Deine Gruppen-Wetten gehen verloren. Nochmals tippen."; } };
+    lv.onclick = () => { if (lv.dataset.ok) { profil.gruppe = null; gruppe = null; wetten = []; mitglieder = []; speichern(); gruppeLaden(); renderAll(); toast("Gruppe verlassen"); } else { lv.dataset.ok = "1"; lv.textContent = "Sicher? Deine Gruppen-Wetten gehen verloren. Nochmals tippen."; } };
     c.append(lv);
     box.append(c);
   }
@@ -753,8 +718,27 @@ function renderProfil() {
     const del = h("button", "btn ghost", "Konto löschen"); del.style.marginTop = ".5rem";
     del.onclick = async () => {
       if (!del.dataset.ok) { del.dataset.ok = "1"; del.textContent = "Wirklich? Konto und Spielstand werden gelöscht. Nochmals tippen."; return; }
-      try { await db.doc("players/" + me).remove(); await fb.deleteMe(); profil = null; wetten = []; solo = []; gespielt = []; speichern(); openOnb(1); renderAll(); toast("Konto gelöscht"); }
-      catch (e) { toast((e && e.code || "").includes("recent-login") ? "Melde dich kurz ab und wieder an, dann nochmals löschen." : "Löschen hat nicht geklappt."); }
+      del.disabled = true; del.textContent = "Wird gelöscht …";
+      let gruppeGeloescht = false, gruppeBleibt = false;
+      try {
+        if (profil?.gruppe) {
+          const gx = await db.doc("groups/" + profil.gruppe).get();
+          if (gx && gx.by === me) {
+            const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil.gruppe).length;
+            if (!andere) { await db.doc("groups/" + profil.gruppe).remove(); gruppeGeloescht = true; } else gruppeBleibt = true;
+          }
+        }
+        await db.doc("members/" + me).remove();
+        await db.doc("players/" + me).remove();
+      } catch (e) { del.disabled = false; del.textContent = "Konto löschen"; delete del.dataset.ok; await sync(); toast("Löschen hat nicht geklappt. Es wurde nichts gelöscht. Versuch es nochmals."); return; }
+      try { await fb.deleteMe(); }
+      catch (e) {
+        await sync(); del.disabled = false; del.textContent = "Konto löschen"; delete del.dataset.ok;
+        toast((e && e.code || "").includes("recent-login") ? "Aus Sicherheitsgründen: Melde dich kurz ab und wieder an, dann nochmals löschen. Es wurde nichts gelöscht." : "Löschen hat nicht geklappt. Es wurde nichts gelöscht.");
+        return;
+      }
+      geraetLeeren();
+      toast("Konto gelöscht" + (gruppeGeloescht ? ", auch deine leere Gruppe." : gruppeBleibt ? ". Deine Gruppe bleibt für die anderen bestehen." : "."));
     };
     ac.append(out, del);
   } else {
@@ -766,8 +750,17 @@ function renderProfil() {
   help.append(h("b", null, "Wird es zu viel? "), "SOS-Spielsucht hilft gratis und anonym, rund um die Uhr: Helpline ", h("b", null, "0800 040 080"), " oder ");
   const a = h("a", null, "sos-spielsucht.ch"); a.href = "https://www.sos-spielsucht.ch"; help.append(a, ".");
   box.append(help);
+  const ds = h("a", "dslink", "Datenschutz: welche Daten gespeichert werden"); ds.href = "datenschutz.html"; box.append(ds);
   const reset = h("button", "x", "Alles zurücksetzen"); reset.style.marginTop = "1rem";
-  reset.onclick = () => { if (reset.dataset.ok) { profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; schein = []; gruppe = null; speichern(); applyDesign(); openOnb(1); renderAll(); } else { reset.dataset.ok = "1"; reset.textContent = "Wirklich alles löschen? Nochmals tippen."; } };
+  reset.onclick = async () => {
+    if (!reset.dataset.ok) { reset.dataset.ok = "1"; reset.textContent = authUser ? "Wirklich? Dein Spielstand wird auf diesem Gerät und im Konto gelöscht. Nochmals tippen." : "Wirklich alles löschen? Nochmals tippen."; return; }
+    if (authUser && db && me) {
+      try { await db.doc("members/" + me).remove(); await db.doc("players/" + me).remove(); }
+      catch { toast("Zurücksetzen hat online nicht geklappt. Es wurde nichts gelöscht."); delete reset.dataset.ok; reset.textContent = "Alles zurücksetzen"; return; }
+    }
+    profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; team = ""; schein = []; gruppe = null; mitglieder = [];
+    speichern(); gruppeLaden(); applyDesign(); openOnb(1); renderAll(); toast(authUser ? "Spielstand gelöscht, auf dem Gerät und im Konto. Dein Konto bleibt bestehen." : "Spielstand gelöscht");
+  };
   box.append(reset);
 }
 
@@ -798,18 +791,19 @@ $("#createGroup").onclick = async () => {
   const name = $("#gName").value.trim().slice(0, 30) || "Unsere Runde";
   const start = parseFloat(document.querySelector('#gStart .chip-opt[aria-pressed="true"]').dataset.v);
   const wochen = parseFloat(document.querySelector('#gDauer .chip-opt[aria-pressed="true"]').dataset.v);
-  const ende = new Date(now.getTime() + wochen * 7 * 864e5).toISOString();
-  const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-  gruppe = { name, start, ende };
+  const ende = new Date(Date.now() + wochen * 7 * 864e5).toISOString();
+  const ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const zz = new Uint32Array(6); crypto.getRandomValues(zz);
+  const code = Array.from(zz, (n) => ABC[n % ABC.length]).join("");
+  gruppe = { name, start, ende, by: me };
   store.set("gruppe_" + code, gruppe);
-  if (db) { try { await db.doc("groups/" + code).set({ ...gruppe, by: me, at: Date.now() }); } catch (e) { toast("Gruppe konnte nicht gespeichert werden" + (e && e.code ? " (" + e.code + ")" : "") + ". Bist du angemeldet?"); return; } }
+  if (db) { try { await db.doc("groups/" + code).set({ name, start, ende, by: me, at: Date.now() }); } catch (e) { toast("Gruppe konnte nicht gespeichert werden" + (e && e.code ? " (" + e.code + ")" : "") + ". Bist du angemeldet?"); return; } }
   finish(code);
 };
 $("#joinGroup").onclick = async () => {
   const code = $("#gCode").value.trim().toUpperCase();
   if (code.length < 4) { toast("Gib den Code deiner Gruppe ein (6 Zeichen)"); $("#gCode").focus(); return; }
   let g = store.get("gruppe_" + code, null);
-  if (db) { try { const x = await db.doc("groups/" + code).get(); if (x && x.name) g = { name: x.name, start: x.start || 100, ende: x.ende || null }; } catch {} }
+  if (db && me) { try { const x = await db.doc("groups/" + code).get(); g = x && x.name ? { name: x.name, start: x.start || 100, ende: x.ende || null, by: x.by || null } : null; } catch { toast("Keine Verbindung. Versuch es nochmals."); return; } }
   if (!g) { toast(code ? "Diesen Code gibt es nicht. Prüf ihn nochmals." : "Gib den Code deiner Gruppe ein"); return; }
   gruppe = g; finish(code);
 };
@@ -858,19 +852,23 @@ function finish(code) {
    ================================================================ */
 let syncT;
 function speichern() { store.set("xpBank", xpBank); store.set("design", design); store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("konto_ziel", konto_ziel); store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs); store.set("risiko", risiko); clearTimeout(syncT); syncT = setTimeout(sync, 500); }
+let syncFehler = false;
 async function sync() {
   if (!db || !me || !profil) return;
-  try { await db.doc("players/" + me).set({ nick: profil.nick, gruppe: profil.gruppe || null, wetten, votes, team, gespielt, solo, kaeufe, aktiv, resetTs, xpBank, design, at: Date.now() }); } catch (e) { console.warn(e); }
-}
-async function setFlynn(id, val) {
-  if (val) flynn[id] = val; else delete flynn[id];
-  renderAll();
-  if (db) { try { await db.doc("meta/flynn").set({ picks: flynn, at: Date.now() }); toast("Gespeichert"); } catch { toast("Konnte nicht gespeichert werden."); } }
+  const g = profil.gruppe || null, at = Date.now();
+  try {
+    await db.doc("players/" + me).set({ nick: profil.nick, gruppe: g, wetten, solo, gespielt: gespielt.slice(-200), kaeufe, aktiv, resetTs, xpBank, design, team, at });
+    await db.doc("members/" + me).set({ nick: profil.nick, gruppe: g, wetten, kaeufe, aktiv, at });
+    syncFehler = false;
+  } catch (e) {
+    console.warn(e);
+    if (!syncFehler) { syncFehler = true; toast("Online speichern hat nicht geklappt. Auf diesem Gerät ist alles gesichert."); }
+  }
 }
 // Nach dem Abmelden: nichts vom Konto auf dem Gerät lassen
 function geraetLeeren() {
-  profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; votes = {}; team = ""; schein = []; gruppe = null; mitglieder = []; applyDesign();
-  ["xpBank", "design", "profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
+  profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; team = ""; schein = []; gruppe = null; mitglieder = []; applyDesign();
+  ["xpBank", "design", "profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel", "einladung"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
   try { Object.keys(localStorage).filter((k) => k.includes("gruppe_")).forEach((k) => localStorage.removeItem(k)); } catch {}
   renderAll(); go("tipps"); openOnb(1);
 }
@@ -880,7 +878,6 @@ function wiederherstellen(x) {
   if (Array.isArray(x.wetten)) wetten = x.wetten;
   if (Array.isArray(x.solo)) solo = x.solo;
   if (Array.isArray(x.gespielt)) gespielt = x.gespielt;
-  if (x.votes) votes = x.votes;
   if (typeof x.team === "string") team = x.team;
   if (Array.isArray(x.kaeufe)) kaeufe = x.kaeufe;
   if (x.aktiv) aktiv = x.aktiv;
@@ -889,7 +886,7 @@ function wiederherstellen(x) {
   if (typeof x.design === "string") design = x.design;
   store.set("xpBank", xpBank); store.set("design", design); applyDesign();
   store.set("kaeufe", kaeufe); store.set("aktiv", aktiv); store.set("resetTs", resetTs);
-  store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("gespielt", gespielt); store.set("votes", votes); store.set("team", team);
+  store.set("profil3", profil); store.set("wetten3", wetten); store.set("solo", solo); store.set("gespielt", gespielt); store.set("team", team);
   return !!x.nick;
 }
 // firebase.js ist ein Modul und lädt nach diesem Script: darauf warten
@@ -908,17 +905,19 @@ async function gruppeLaden() {
   unsubs.forEach((u) => { try { u(); } catch {} }); unsubs = [];
   mitglieder = [];
   if (!db || !me || !profil?.gruppe) { renderGruppe(); return; }
-  try { const x = await db.doc("groups/" + profil.gruppe).get(); if (x && x.name) { gruppe = { name: x.name, start: x.start || 100, ende: x.ende || null }; store.set("gruppe_" + profil.gruppe, gruppe); } } catch {}
-  try { unsubs.push(db.mitglieder(profil.gruppe, (list) => { mitglieder = list; renderGruppe(); renderStatistik(); tippDerWoche(); })); } catch {}
+  try {
+    const x = await db.doc("groups/" + profil.gruppe).get();
+    if (x && x.name) { gruppe = { name: x.name, start: x.start || 100, ende: x.ende || null, by: x.by || null }; store.set("gruppe_" + profil.gruppe, gruppe); }
+    else if (x === null) { try { localStorage.removeItem("tk_gruppe_" + profil.gruppe); } catch {} profil.gruppe = null; gruppe = null; wetten = []; speichern(); renderAll(); toast("Deine Gruppe gibt es nicht mehr."); return; }
+  } catch {}
+  try { unsubs.push(db.mitglieder(profil.gruppe, (list) => { mitglieder = list; renderGruppe(); renderStatistik(); })); } catch {}
 }
 async function initDb() {
   fb = await fbBereit();
   if (!fb) return;
   db = fb.db;
-  try { db.doc("meta/flynn").onSnapshot((x) => { flynn = (x && x.picks) || {}; renderTipps(); }); } catch {}
   fb.onAuth(async (u) => {
     authUser = u; me = u ? u.uid : null;
-    isOwner = !!(u && u.email && OWNER_EMAILS.includes(u.email.toLowerCase()));
     if (!u) { unsubs.forEach((f) => { try { f(); } catch {} }); unsubs = []; mitglieder = []; renderAll(); return; }
     let x = null; try { x = await db.doc("players/" + me).get(); } catch {}
     if (x && x.nick) { wiederherstellen(x); if (!gruppeNachLogin) $("#onb").hidden = true; toast("Spielstand geladen"); }
@@ -961,7 +960,6 @@ function zeigeSub(t) {
 }
 document.querySelectorAll(".subtabs button").forEach((b) => (b.onclick = () => zeigeSub(b.dataset.sub)));
 zeigeSub(subTab);
-$("#fwToggle").onclick = () => { const o = $("#fwToggle").getAttribute("aria-expanded") === "true"; $("#fwToggle").setAttribute("aria-expanded", String(!o)); $("#finger").hidden = o; };
 function zeigeStand() { (function stale() { const hrs = (Date.now() - new Date(STAND)) / 36e5; const el = $("#stale"); el.hidden = hrs <= 24; if (hrs > 24) { el.textContent = "Die Tipps sind " + Math.floor(hrs / 24) + (Math.floor(hrs / 24) === 1 ? " Tag" : " Tage") + " alt. Bald kommt ein Update."; } })();
 $("#stand").textContent = "Stand: " + new Intl.DateTimeFormat("de-CH", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZone: tz }).format(new Date(STAND)); }
 zeigeStand();
@@ -971,13 +969,13 @@ if (profil?.gruppe) gruppe = store.get("gruppe_" + profil.gruppe, null);
 function allePicks(liste) {
   // liste: [{ts, picks, einsatz?}] -> einzelne Tipps mit Ergebnis
   const r = [];
-  liste.forEach((w) => w.picks.forEach((p) => { if (gesperrt(w, p)) return; const g = spiel(p.g); r.push({ ...p, ts: w.ts, g0: g, res: g?.res ? (g.res === p.k ? "ok" : "falsch") : "offen", p: g ? out(g, p.k).p : null, liga: g?.liga || "?" }); }));
+  liste.forEach((w) => w.picks.forEach((p) => { if (gesperrt(w, p)) return; const g = spiel(p.g); if (g && g.res === "x") return; r.push({ ...p, ts: w.ts, g0: g, res: g?.res ? (g.res === p.k ? "ok" : "falsch") : "offen", p: g ? out(g, p.k).p : null, liga: g?.liga || "?" }); }));
   return r;
 }
 function trefferquote(ps) { const e = ps.filter((x) => x.res !== "offen"); return e.length ? e.filter((x) => x.res === "ok").length / e.length * 100 : null; }
 function renderStatistik() {
   const box = $("#statistik"); if (!box) return; box.replaceChildren();
-  const ps = allePicks([...wetten, ...solo, ...gespielt]);
+  const ps = allePicks([...uniq([...wetten, ...solo]), ...gespielt]);
   const entschieden = ps.filter((x) => x.res !== "offen");
   const tq = trefferquote(ps);
   // Kopfzahl
@@ -1002,7 +1000,7 @@ function renderStatistik() {
   const fertig = wetten.filter((w) => status(w) !== "offen");
   if (fertig.length) { const plus = fertig.reduce((t, w) => t + (status(w) === "gewonnen" ? w.einsatz * wQuote(w) - w.einsatz : -w.einsatz), 0); kach("Gruppe: Plus/Minus", (plus >= 0 ? "+" : "−") + fr(Math.abs(plus)), fertig.length + " Wetten abgerechnet"); }
   // Kombis
-  const kombis = [...wetten, ...solo, ...gespielt].filter((w) => w.picks.length > 1);
+  const kombis = [...uniq([...wetten, ...solo]), ...gespielt].filter((w) => w.picks.length > 1);
   if (kombis.length) { const kok = kombis.filter((w) => status(w) === "gewonnen").length; kach("Kombis gewonnen", kok + " von " + kombis.filter((w) => status(w) !== "offen").length, kombis.length + (kombis.length === 1 ? " Kombi" : " Kombis") + " gespielt"); }
   box.append(grid);
   // Nach Stufe
@@ -1050,11 +1048,12 @@ const SHOP = [
   { id: "f-gold", typ: "farbe", name: "Gold", preis: 400 },
   { id: "j-vers", typ: "joker", name: "Kombi-Versicherung", preis: 120, info: "Geht bei einer Kombi genau ein Tipp daneben, bekommst du den Einsatz zurück." },
   { id: "j-boost", typ: "joker", name: "Quoten-Boost", preis: 80, info: "+10 % Gewinn auf eine Wette, wenn sie aufgeht." },
+  { id: "j-spion", typ: "spion", name: "Spion", preis: 100, info: "24 Stunden siehst du die offenen Tipps eines Kollegen, schon vor dem Anpfiff. Sonst sind sie geheim." },
   { id: "s-clown", typ: "stich", name: "Clown verteilen", preis: 50, info: "Ein Kollege trägt 24 Stunden einen Clown neben dem Namen." },
   { id: "s-schild", typ: "schild", name: "Schutzschild", preis: 60, info: "24 Stunden kann dir niemand einen Clown verpassen." },
 ];
 const TAG = 864e5;
-/* ================= Stufen, Designs, Errungenschaften ================= */
+/* ================= TESTVERSION: Stufen, Designs, Errungenschaften ================= */
 const STUFEN = [{ n: 1, t: "Rookie", ab: 0 }, { n: 2, t: "Tipper", ab: 100 }, { n: 3, t: "Stammtipper", ab: 300 }, { n: 4, t: "Profi", ab: 700 }, { n: 5, t: "Legende", ab: 1500 }];
 const DESIGNS = [
   { id: "zeitung", n: "Zeitung", st: 1, bg: "#F3F2EF", ac: "#B8612F", tc: "#14161A" },
@@ -1065,7 +1064,7 @@ const DESIGNS = [
   { id: "neon", n: "Neon-Arena", st: 5, bg: "#000000", ac: "#B6FF3B", tc: "#000000" },
 ];
 function gewinnPlus(list) { return (list || []).reduce((t, w) => (status(w) === "gewonnen" ? t + Math.max(0, w.einsatz * wQuote(w) - w.einsatz) : t), 0); }
-function erspielt() { return xpBank + gewinnPlus(solo) + gewinnPlus(wetten); }
+function erspielt() { return xpBank + gewinnPlus(uniq([...solo, ...wetten])); }
 function lvl() { const x = erspielt(); let s = STUFEN[0]; STUFEN.forEach((v) => { if (x >= v.ab) s = v; }); return s; }
 function applyDesign() {
   let d = DESIGNS.find((x) => x.id === design) || DESIGNS[0];
@@ -1074,7 +1073,7 @@ function applyDesign() {
   const m = document.querySelector('meta[name="theme-color"]'); if (m) m.content = d.bg;
 }
 function erfolge() {
-  const all = [...wetten, ...solo], ps = picksAus(all), richtig = ps.filter((p) => p.ok);
+  const all = uniq([...wetten, ...solo]), ps = picksAus(all), richtig = ps.filter((p) => p.ok);
   const ab = abzeichen(all).map((a) => ({ t: a.t, d: a.d, ok: a.ok }));
   const x = erspielt(), n = ps.length;
   return ab.concat([
@@ -1122,7 +1121,7 @@ const besitzt = (id) => kaeufe.some((k) => k.id === id);
 function jokerUebrig(id) {
   const gekauft = kaeufe.filter((k) => k.id === id).length;
   const feld = id === "j-vers" ? "vers" : "boost";
-  return gekauft - [...solo, ...wetten].filter((w) => w[feld]).length;
+  return gekauft - uniq([...solo, ...wetten]).filter((w) => w[feld]).length;
 }
 const gekaufterTitel = (a) => (a && a.titel && shopItem(a.titel) ? shopItem(a.titel).name : "");
 const farbKlasse = (a) => (a && a.farbe ? "nf-" + a.farbe : "");
@@ -1140,52 +1139,92 @@ function kaufen(item, extra) {
   if (item.typ === "farbe") aktiv.farbe = item.id;
   speichern(); renderAll(); return true;
 }
+let auswahl = null;
+const spionUebrig = () => kaeufe.filter((k) => k.id === "j-spion").length - kaeufe.filter((k) => k.id === "j-spion-use").length;
+const spionAktiv = (id) => kaeufe.some((k) => k.id === "j-spion-use" && k.an === id && Date.now() < k.ts + TAG);
+const SELT = ["Gewöhnlich", "Selten", "Episch", "Legendär"];
+const seltenheit = (p) => (p < 150 ? 0 : p < 250 ? 1 : p < 500 ? 2 : 3);
+function heuteNr() { const d = new Date(); return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5); }
+function angebot() {
+  const pool = SHOP.filter((x) => x.typ === "joker" || x.typ === "spion");
+  const it = pool[heuteNr() % pool.length]; return { it, preis: Math.round(it.preis * 0.7) };
+}
+function bisMitternacht() { const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0); const s = Math.floor((m - n) / 6e4); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
 function renderShop() {
   const box = $("#shopBox"); if (!box) return; box.replaceChildren();
+  const deal = angebot();
   const kh = h("div", "kontoline"); kh.append(h("span", null, "Dein Spielgeld"), h("b", null, fr(spielgeld())), h("small", null, "Verdien mehr, indem du im Tippschein mit Spielgeld richtig tippst."));
   box.append(kh);
-  const gruppeTxt = { titel: ["Titel", "Steht in der Rangliste neben deinem Namen. Einer ist aktiv."], farbe: ["Namensfarbe", "So erscheint dein Name in der Rangliste."], joker: ["Joker", "Setzt du beim Platzieren einer Wette ein."], stich: ["Sticheln", "Nur in einer Gruppe."] };
-  ["titel", "farbe", "joker", "stich"].forEach((typ) => {
-    const sec = h("div", "shop-sec"); sec.append(h("h3", null, gruppeTxt[typ][0]), h("p", "sub", gruppeTxt[typ][1]));
-    SHOP.filter((x) => x.typ === typ || (typ === "stich" && x.typ === "schild")).forEach((it) => {
-      const row = h("div", "shop-row");
-      const l = h("div", "shop-l");
-      const nameEl = h("b", it.typ === "farbe" ? "nick nf-" + it.id : null, it.name);
-      l.append(nameEl); if (it.info) l.append(h("small", null, it.info));
-      const r = h("div", "shop-r");
-      if (it.typ === "titel" || it.typ === "farbe") {
-        const feld = it.typ;
-        if (besitzt(it.id)) {
-          const istAktiv = aktiv[feld] === it.id;
-          const b = h("button", "sbtn" + (istAktiv ? " on" : ""), istAktiv ? "Aktiv" : "Anlegen");
-          b.onclick = () => { aktiv[feld] = istAktiv ? null : it.id; speichern(); renderAll(); toast(istAktiv ? "Abgelegt" : "Angelegt"); };
-          r.append(b);
-        } else { const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis; b.onclick = () => { if (kaufen(it)) toast(it.name + " gekauft"); }; r.append(b); }
-      } else if (it.typ === "joker") {
-        const n = jokerUebrig(it.id); if (n > 0) r.append(h("small", "anz", n + " im Besitz"));
-        const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis; b.onclick = () => { if (kaufen(it)) toast(it.name + " gekauft"); }; r.append(b);
-      } else if (it.typ === "schild") {
-        const an = schildAktiv(kaeufe, Date.now()); if (an) r.append(h("small", "anz", "aktiv"));
-        const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis || an; b.onclick = () => { if (kaufen(it)) toast("Schutzschild aktiv für 24 Stunden"); }; r.append(b);
-      } else if (it.typ === "stich") {
-        const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
-        if (!andere.length) { r.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen" : "Nur in einer Gruppe")); }
-        else {
-          const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
-          const b = h("button", "sbtn buy", "Fr. " + it.preis); b.disabled = spielgeld() < it.preis;
-          b.onclick = () => {
-            const ziel = andere.find((m) => m.id === sel.value); if (!ziel) return;
-            if (schildAktiv(ziel.kaeufe, Date.now())) { toast(ziel.nick + " hat ein Schutzschild"); return; }
-            if (kaufen(it, { an: ziel.id })) toast(ziel.nick + " trägt jetzt 24 Stunden einen Clown");
-          };
-          r.append(sel, b);
-        }
+
+  // Auswahl-Panel
+  const pan = h("div", "pv-panel");
+  if (!auswahl) { pan.append(h("small", null, "Tippe unten etwas an, um mehr zu erfahren oder es zu kaufen.")); }
+  else {
+    const a = auswahl, preisX = deal.it.id === a.id ? deal.preis : a.preis;
+    const kopf = h("div", "pv-kopf"); kopf.append(h("b", null, a.name), h("span", "selt s" + seltenheit(a.preis), SELT[seltenheit(a.preis)])); pan.append(kopf);
+    if (a.info) pan.append(h("small", null, a.info));
+    const act = h("div", "pv-act");
+    const preisTxt = preisX < a.preis ? "Fr. " + preisX + " (statt " + a.preis + ")" : "Fr. " + a.preis;
+    const kaufBtn = (txt, fn) => { const b = h("button", "sbtn buy", txt); b.disabled = spielgeld() < preisX; b.onclick = () => { if (kaufen({ ...a, preis: preisX })) { fn && fn(); } }; return b; };
+    if (a.typ === "titel" || a.typ === "farbe") {
+      if (besitzt(a.id)) {
+        const istAktiv = aktiv[a.typ] === a.id; const b = h("button", "sbtn" + (istAktiv ? " on" : ""), istAktiv ? "Aktiv · ablegen" : "Anlegen");
+        b.onclick = () => { aktiv[a.typ] = istAktiv ? null : a.id; speichern(); renderAll(); toast(istAktiv ? "Abgelegt" : "Angelegt"); }; act.append(b);
+      } else act.append(kaufBtn("Kaufen · " + preisTxt, () => toast(a.name + " gekauft")));
+    } else if (a.typ === "joker") {
+      const n = jokerUebrig(a.id); if (n > 0) act.append(h("small", "anz", n + " im Besitz"));
+      act.append(kaufBtn("Kaufen · " + preisTxt, () => toast(a.name + " gekauft")));
+    } else if (a.typ === "spion") {
+      const n = spionUebrig(); if (n > 0) act.append(h("small", "anz", n + " im Besitz"));
+      act.append(kaufBtn("Kaufen · " + preisTxt, () => toast("Spion gekauft")));
+      const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
+      if (n > 0 && andere.length) {
+        const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
+        const e = h("button", "sbtn", "Einsetzen"); e.onclick = () => { const z = andere.find((m) => m.id === sel.value); if (!z) return; kaeufe.push({ ts: Date.now(), id: "j-spion-use", preis: 0, an: z.id }); speichern(); renderAll(); toast("Du siehst jetzt 24 Stunden die Tipps von " + z.nick + "."); };
+        act.append(sel, e);
+      } else if (n > 0) act.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen in der Gruppe" : "Einsetzen geht nur in einer Gruppe"));
+    } else if (a.typ === "schild") {
+      const aktivS = schildAktiv(kaeufe, Date.now()); if (aktivS) act.append(h("small", "anz", "aktiv"));
+      const b = kaufBtn("Kaufen · " + preisTxt, () => toast("Schutzschild aktiv für 24 Stunden")); if (aktivS) b.disabled = true; act.append(b);
+    } else if (a.typ === "stich") {
+      const andere = mitglieder.filter((m) => m.id !== me && m.gruppe === profil?.gruppe);
+      if (!andere.length) act.append(h("small", "anz", profil?.gruppe ? "Noch keine Kollegen in der Gruppe" : "Nur in einer Gruppe"));
+      else {
+        const sel = h("select", "ssel"); andere.forEach((m) => sel.append(new Option(m.nick, m.id)));
+        const b = h("button", "sbtn buy", "Kaufen · " + preisTxt); b.disabled = spielgeld() < preisX;
+        b.onclick = () => { const ziel = andere.find((m) => m.id === sel.value); if (!ziel) return; if (schildAktiv(ziel.kaeufe, Date.now())) { toast(ziel.nick + " hat ein Schutzschild"); return; } if (kaufen({ ...a, preis: preisX }, { an: ziel.id })) toast(ziel.nick + " trägt jetzt 24 Stunden einen Clown"); };
+        act.append(sel, b);
       }
-      row.append(l, r); sec.append(row);
+    }
+    pan.append(act);
+  }
+  box.append(pan);
+
+  // Tagesangebot
+  const d = h("button", "deal"); d.setAttribute("aria-pressed", String(!!(auswahl && auswahl.id === deal.it.id)));
+  const gesamm = (deal.it.typ === "titel" || deal.it.typ === "farbe") && besitzt(deal.it.id);
+  d.append(h("small", "deal-k", "TAGESANGEBOT · noch " + bisMitternacht() + " h"), h("div", "deal-n", deal.it.name));
+  const dz = h("div", "deal-z"); const pr = h("span"); const alt = h("s", null, "Fr. " + deal.it.preis); const neu = h("b", null, " Fr. " + deal.preis); pr.append(alt, neu);
+  dz.append(gesamm ? h("span", null, "Schon gesammelt") : pr, h("span", "deal-p", "-30 %")); d.append(dz);
+  d.onclick = () => { auswahl = deal.it; renderShop(); };
+  box.append(d);
+
+  // Reihen
+  const lane = (titel, items) => {
+    const w = h("div", "lane"); w.append(h("div", "lane-t", titel));
+    const row = h("div", "lane-r");
+    items.forEach((it) => {
+      const b = h("button", "mc r" + seltenheit(it.preis) + (auswahl && auswahl.id === it.id ? " sel" : ""));
+      const eigen = (it.typ === "titel" || it.typ === "farbe") && besitzt(it.id);
+      const sub = eigen ? (aktiv[it.typ] === it.id ? "Aktiv" : "Gesammelt") : "Fr. " + it.preis;
+      b.append(h("b", it.typ === "farbe" ? "nick nf-" + it.id : null, it.name), h("small", eigen ? "own" : null, sub));
+      b.onclick = () => { auswahl = it; renderShop(); };
+      row.append(b);
     });
-    box.append(sec);
-  });
-  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben."));
+    w.append(row); return w;
+  };
+  box.append(lane("Joker für deine Wetten", SHOP.filter((x) => x.typ === "joker")), lane("Für die Gruppe", SHOP.filter((x) => x.typ === "spion" || x.typ === "stich" || x.typ === "schild")));
+  box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben. Das Tagesangebot wechselt um Mitternacht. Titel und Designs verdienst du dir über Stufen und Errungenschaften."));
 }
 
 function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
@@ -1198,8 +1237,22 @@ initDb();
     if (!r.ok) return;
     const d = await r.json();
     if (!d || !Array.isArray(d.SPIELE)) return;
-    STAND = d.STAND || STAND; SPIELE = d.SPIELE; TOPS = d.TOPS || []; RESULTATE = d.RESULTATE || []; if (d.TIPP_DER_WOCHE) TIPP_DER_WOCHE = d.TIPP_DER_WOCHE;
+    STAND = d.STAND || STAND; SPIELE = d.SPIELE; TOPS = d.TOPS || []; RESULTATE = d.RESULTATE || []; ARCHIV = Array.isArray(d.ARCHIV) ? d.ARCHIV : [];
     zeigeStand(); renderAll();
   } catch {}
+})();
+/* Einladungslink ?g=CODE */
+(function einladung() {
+  try {
+    const q = new URLSearchParams(location.search).get("g");
+    if (q) { store.set("einladung", q.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8)); history.replaceState(null, "", location.pathname); }
+  } catch {}
+  const c = store.get("einladung", null); if (!c) return;
+  setTimeout(() => {
+    if (profil?.gruppe) { store.set("einladung", null); return; }
+    const inp = $("#gCode"); if (inp) inp.value = c;
+    toast("Einladung zur Gruppe " + c);
+    if (profil) { if (window.brauchtLogin && window.brauchtLogin(5)) return; openOnb(5); }
+  }, 900);
 })();
 if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js"); } catch {} }

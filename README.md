@@ -1,6 +1,6 @@
 # Tippkompass
 
-Sporttipps für Fussball und Eishockey: sichere, mittlere und riskante Tipps, Kombis, Spielgeld und Tipprunden mit Kollegen.
+Sporttipps für Fussball und Tennis: sichere, mittlere und riskante Tipps, Kombis, Spielgeld und Tipprunden mit Kollegen.
 
 - `index.html`, `app.js`: die App
 - `firebase.js`: Anmeldung und Online-Spielstand (Firebase)

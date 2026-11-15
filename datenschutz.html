@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenschutz · Tippkompass</title>
+<meta name="description" content="Welche Daten Tippkompass speichert, wer sie sieht und wie du sie löschst.">
+<link rel="icon" href="icon-192.png">
+<style>
+@font-face { font-family: "Newsreader"; font-style: normal; font-weight: 200 800; font-display: swap; src: url(fonts/newsreader-latin-opsz-normal.woff2) format("woff2"); }
+@font-face { font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap; src: url(fonts/source-sans-3-latin-wght-normal.woff2) format("woff2"); }
+body { margin: 0; background: #F3F2EF; color: #14161A; font-family: "Source Sans 3", system-ui, sans-serif; line-height: 1.6; }
+main { max-width: 680px; margin: 0 auto; padding: 1.5rem 1.1rem 3rem; }
+h1 { font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: 2rem; margin: .5rem 0 .2rem; }
+h2 { font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: 1.3rem; margin: 1.8rem 0 .3rem; border-top: 1px solid #DEDCD6; padding-top: 1rem; }
+p, li { font-size: 1rem; }
+ul { padding-left: 1.2rem; }
+.sub { color: #6B6E75; }
+a { color: #8E4520; font-weight: 600; }
+.back { display: inline-block; padding: .6rem 0; min-height: 40px; }
+</style>
+</head>
+<body>
+<main>
+<a class="back" href="./">← Zurück zur App</a>
+<h1>Datenschutz</h1>
+<p class="sub">Stand: November 2026. Kurz gesagt: Tippkompass speichert nur, was für das Spiel nötig ist, zeigt keine Werbung und verfolgt dich nicht.</p>
+
+<h2>Ohne Konto</h2>
+<p>Wenn du dich nicht anmeldest, bleibt alles auf deinem Gerät, im Speicher deines Browsers: Spitzname, Spielgeld-Wetten, Käufe im Shop, Stufe und Design. Nichts davon wird an uns geschickt. Löschst du die Browserdaten oder tippst im Profil auf «Alles zurücksetzen», ist es weg.</p>
+
+<h2>Mit Konto</h2>
+<p>Für die Anmeldung nutzt Tippkompass Firebase von Google. Dabei werden gespeichert:</p>
+<ul>
+  <li><b>Bei der Anmeldung (Firebase Authentication):</b> deine E-Mail-Adresse und ein verschlüsseltes Passwort, oder dein Google-Konto, wenn du dich mit Google anmeldest. Dazu das Datum der Erstellung und der letzten Anmeldung.</li>
+  <li><b>Dein Spielstand (Firestore, Rechenzentrum in Zürich):</b> Spitzname, Gruppe, Wetten mit Spielgeld, Käufe im Shop, Stufe, Design und Lieblingsteam.</li>
+</ul>
+<p>Google kann Anmeldedaten auch ausserhalb der Schweiz verarbeiten. Weitere Infos: <a href="https://firebase.google.com/support/privacy">Datenschutz bei Firebase</a>.</p>
+
+<h2>Wer was sieht</h2>
+<ul>
+  <li><b>Deine Gruppe</b> sieht deinen Spitznamen, deine Wetten in der Gruppe, Titel und Namensfarbe sowie Shop-Aktionen wie Clown, Schutzschild oder Spion.</li>
+  <li><b>Niemand sonst</b> sieht deine Daten. Deine E-Mail-Adresse wird keinem anderen Spieler gezeigt.</li>
+  <li>Deine eigenen Wetten mit Spielgeld, die nicht in der Gruppe zählen, siehst nur du.</li>
+</ul>
+<p>Die Spielstände werden auf den Handys berechnet und nicht von einem Server geprüft. Die Rangliste ist deshalb ein Spass unter Kollegen und nicht fälschungssicher.</p>
+
+<h2>Was Tippkompass nicht macht</h2>
+<ul>
+  <li>Keine Werbung, keine Analyse- oder Tracking-Dienste, keine Cookies zu Werbezwecken.</li>
+  <li>Kein echtes Geld: In der App wird nie echtes Geld eingesetzt oder bezahlt.</li>
+  <li>Keine Weitergabe oder kein Verkauf deiner Daten.</li>
+</ul>
+
+<h2>Technik und Hosting</h2>
+<p>Die App liegt auf GitHub Pages. GitHub speichert beim Aufruf technische Angaben wie die IP-Adresse kurzzeitig in Server-Protokollen (<a href="https://docs.github.com/de/site-policy/privacy-policies/github-general-privacy-statement">Datenschutz bei GitHub</a>). Die Schriften liegen direkt in der App. Für die Anmeldung lädt die App die Firebase-Software von Google. Wenn du auf «Per WhatsApp einladen» tippst, öffnet sich WhatsApp mit dem Einladungstext; vorher wird nichts an WhatsApp geschickt.</p>
+
+<h2>Wie lange und wie löschen</h2>
+<ul>
+  <li>Dein Spielstand bleibt gespeichert, solange dein Konto besteht.</li>
+  <li><b>Alles zurücksetzen</b> (im Profil) löscht deinen Spielstand auf dem Gerät und im Konto. Dein Konto bleibt bestehen.</li>
+  <li><b>Konto löschen</b> (im Profil) löscht dein Konto und deinen Spielstand sofort. Hast du eine Gruppe erstellt, in der sonst niemand ist, wird sie mitgelöscht. Sind noch andere drin, bleibt die Gruppe (Name, Startgeld, Enddatum) für sie bestehen.</li>
+  <li>Gruppe verlassen entfernt deine Gruppen-Wetten aus der Rangliste.</li>
+</ul>
+
+<h2>Deine Rechte</h2>
+<p>Du kannst jederzeit Auskunft verlangen, welche Daten über dich gespeichert sind, sie berichtigen oder löschen lassen. Das meiste kannst du direkt in der App selbst tun.</p>
+
+<h2>Hilfe bei Spielsucht</h2>
+<p>Wird es zu viel? SOS-Spielsucht hilft gratis und anonym, rund um die Uhr: Helpline 0800 040 080 oder <a href="https://www.sos-spielsucht.ch">sos-spielsucht.ch</a>.</p>
+</main>
+</body>
+</html>

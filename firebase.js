@@ -31,7 +31,7 @@ window.tkFirebase = (async () => {
         };
       },
       mitglieder(code, cb) {
-        const q = query(collection(fs, "players"), where("gruppe", "==", code));
+        const q = query(collection(fs, "members"), where("gruppe", "==", code));
         return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), () => {});
       },
     };

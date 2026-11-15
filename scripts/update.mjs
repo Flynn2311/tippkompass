@@ -90,8 +90,13 @@ const ymd = (d) => d.toISOString().slice(0, 10).replace(/-/g, "");
 const zuerich = (d) => Number(new Intl.DateTimeFormat("de-CH", { timeZone: "Europe/Zurich", hour: "numeric", hour12: false }).format(d));
 const standIso = (d) => { const z = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Zurich" })); const off = Math.round((z - new Date(d.toLocaleString("en-US", { timeZone: "UTC" }))) / 6e4); const p = (n) => String(Math.abs(n)).padStart(2, "0"); return `${z.getFullYear()}-${p(z.getMonth() + 1)}-${p(z.getDate())}T${p(z.getHours())}:${p(z.getMinutes())}:00${off >= 0 ? "+" : "-"}${p(Math.floor(Math.abs(off) / 60))}:${p(Math.abs(off) % 60)}`; };
 
-const d = JSON.parse(fs.readFileSync(FILE, "utf8"));
-const vorher = JSON.stringify({ S: d.SPIELE, T: d.TOPS, R: d.RESULTATE, W: d.TIPP_DER_WOCHE });
+let d;
+try { d = JSON.parse(fs.readFileSync(FILE, "utf8")); } catch (e) { console.error("data.json ist nicht lesbar, nichts geändert:", e.message); process.exit(1); }
+if (!Array.isArray(d.SPIELE)) { console.error("data.json hat kein SPIELE-Feld, nichts geändert"); process.exit(1); }
+d.RESULTATE = Array.isArray(d.RESULTATE) ? d.RESULTATE : [];
+d.ARCHIV = Array.isArray(d.ARCHIV) ? d.ARCHIV : [];
+delete d.TIPP_DER_WOCHE;
+const vorher = JSON.stringify({ S: d.SPIELE, T: d.TOPS, R: d.RESULTATE, A: d.ARCHIV });
 const log = [];
 
 // ---------- 1) Resultate (ESPN) ----------
@@ -207,7 +212,15 @@ async function quoten() {
 
 // ---------- 3) Aufräumen, Top-Tipps, Tipp der Woche ----------
 function aufraeumen() {
-  d.SPIELE = d.SPIELE.filter((g) => g.id === d.TIPP_DER_WOCHE || new Date(g.zeit) > now - 7 * D);
+  // Spiele älter als 7 Tage ins Archiv (nur das Nötige), damit Wetten darauf abgerechnet bleiben.
+  // Ohne Resultat nach 7 Tagen gilt das Spiel als abgesagt ("x"): Einsätze darauf gibt es zurück.
+  for (const g of d.SPIELE) {
+    if (new Date(g.zeit) > now - 7 * D || d.ARCHIV.some((x) => x.id === g.id)) continue;
+    d.ARCHIV.push({ id: g.id, sport: g.sport, liga: g.liga, zeit: g.zeit, h: g.h, a: g.a, p: g.p, res: g.res || "x" });
+    if (!g.res) log.push("Ohne Resultat archiviert (abgesagt): " + g.h + " – " + g.a);
+  }
+  d.ARCHIV = d.ARCHIV.filter((g) => new Date(g.zeit) > now - 120 * D);
+  d.SPIELE = d.SPIELE.filter((g) => new Date(g.zeit) > now - 7 * D);
   const grenze = ymd(new Date(now - 30 * D));
   d.RESULTATE = d.RESULTATE.filter((r) => r.d.replace(/-/g, "") >= grenze).sort((a, b) => a.d.localeCompare(b.d))
     .filter((r, i, arr) => !arr.slice(0, i).some((x) => x.h === r.h && x.a === r.a && Math.abs(new Date(x.d) - new Date(r.d)) <= D));
@@ -230,20 +243,24 @@ function aufraeumen() {
     else text += f.k === "h" ? ". Dazu der Heimvorteil." : ". Ich setze trotzdem auf den Auswärtssieg.";
     d.TOPS.push({ id: g.id, wahl: f.k, text });
   }
-  const tdw = d.SPIELE.find((g) => g.id === d.TIPP_DER_WOCHE);
-  if (!tdw || new Date(tdw.zeit) < now - 3 * D) {
-    const prio = { "Champions League": 3, "Super League": 2.5, "Premier League": 2, "Bundesliga": 2 };
-    const c = d.SPIELE.filter((g) => offen(g) && g.sport === "fussball" && new Date(g.zeit) - now < 7 * D)
-      .map((g) => ({ g, s: (prio[g.liga] || 1) * 10 - Math.abs(g.p.h - g.p.a) })).sort((a, b) => b.s - a.s)[0];
-    if (c) { d.TIPP_DER_WOCHE = c.g.id; log.push("Neuer Tipp der Woche: " + c.g.h + " – " + c.g.a); }
-  }
 }
 
-await resultate();
-await quoten();
-aufraeumen();
-const nachher = JSON.stringify({ S: d.SPIELE, T: d.TOPS, R: d.RESULTATE, W: d.TIPP_DER_WOCHE });
+// Jeder Schritt einzeln: fällt einer aus, bleiben die anderen und die alten Daten erhalten
+let fehler = 0;
+for (const [name, fn] of [["Resultate", resultate], ["Quoten", quoten], ["Aufräumen", aufraeumen]]) {
+  try { await fn(); } catch (e) { fehler++; log.push(`${name}: unerwarteter Fehler (${e.message}), Schritt übersprungen`); }
+}
+// Prüfen, bevor geschrieben wird
+const okSpiel = (g) => g && typeof g.id === "string" && typeof g.h === "string" && typeof g.a === "string" && !isNaN(new Date(g.zeit)) && g.p && typeof g.p.h === "number";
+const kaputt = d.SPIELE.filter((g) => !okSpiel(g));
+if (kaputt.length) { log.push(`${kaputt.length} ungültige Spiele entfernt`); d.SPIELE = d.SPIELE.filter(okSpiel); }
+const ids = d.SPIELE.map((g) => g.id);
+if (new Set(ids).size !== ids.length) { console.error("Doppelte Spiel-IDs, nichts geschrieben"); process.exit(1); }
+const nachher = JSON.stringify({ S: d.SPIELE, T: d.TOPS, R: d.RESULTATE, A: d.ARCHIV });
 if (nachher !== vorher) d.STAND = standIso(now);
-fs.writeFileSync(FILE, JSON.stringify(d, null, 1) + "\n");
+const tmp = new URL("../data.json.tmp", import.meta.url);
+fs.writeFileSync(tmp, JSON.stringify(d, null, 1) + "\n");
+fs.renameSync(tmp, FILE);
 console.log(log.join("\n") || "Keine Änderungen");
+if (fehler) console.log("Achtung:", fehler, "Schritt(e) mit Fehler");
 console.log(nachher !== vorher ? "GEÄNDERT" : "UNVERÄNDERT", "| Spiele:", d.SPIELE.length, "| offen:", d.SPIELE.filter((g) => !g.res).length);
