@@ -910,6 +910,8 @@ async function gruppeLaden() {
     if (x && x.name) { gruppe = { name: x.name, start: x.start || 100, ende: x.ende || null, by: x.by || null }; store.set("gruppe_" + profil.gruppe, gruppe); }
     else if (x === null) { try { localStorage.removeItem("tk_gruppe_" + profil.gruppe); } catch {} profil.gruppe = null; gruppe = null; wetten = []; speichern(); renderAll(); toast("Deine Gruppe gibt es nicht mehr."); return; }
   } catch {}
+  await sync(); // Mitgliedschaft zuerst online speichern, sonst darf man die Gruppe noch nicht lesen
+  if (!profil?.gruppe) return;
   try { unsubs.push(db.mitglieder(profil.gruppe, (list) => { mitglieder = list; renderGruppe(); renderStatistik(); })); } catch {}
 }
 async function initDb() {
