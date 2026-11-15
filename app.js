@@ -499,14 +499,10 @@ function renderSchein() {
   const vorher = schein.length; schein = schein.filter((s) => { const g = spiel(s.g); return g && offen(g); });
   if (schein.length < vorher) badge();
   if (!schein.length) {
-    const leer = h("div", "leer");
-    leer.append(h("b", null, "Dein Tippschein ist noch leer"));
-    const ol = h("ol", "leer-steps");
-    ["Geh auf «Tipps» oder «Kombis».", "Drück bei einem Spiel auf «+ Tippschein».", "Komm hierher zurück und setz dein Spielgeld."].forEach((t) => ol.append(h("li", null, t)));
-    const zu = h("button", "btn", "Zu den Tipps"); zu.onclick = () => go("tipps");
-    leer.append(ol, zu); box.append(leer);
+    $("#slipKopf").hidden = true;
     renderMeineWetten(); return;
   }
+  $("#slipKopf").hidden = false;
   let q = 1, p = 1;
   schein.forEach((s) => {
     const g = spiel(s.g), o = out(g, s.k);
