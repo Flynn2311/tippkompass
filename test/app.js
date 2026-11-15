@@ -1150,11 +1150,34 @@ function stufeCard() {
   c.append(g); return c;
 }
 function erfolgeCard() {
-  const e = erfolge(), ok = e.filter((a) => a.ok).length;
-  const c = h("div", "card"); c.append(h("h3", null, "Errungenschaften: " + ok + " von " + e.length));
-  const l = h("div", "erf");
-  e.forEach((a) => { const d = h("div", a.ok ? "ok" : ""); const ic = h("span", "ic", a.ok ? "✓" : "–"); const t = h("span"); t.append(h("b", null, a.t), h("small", null, a.d)); d.append(ic, t); l.append(d); });
-  c.append(l); return c;
+  // Pokalvitrine: pro Thema Bronze, Silber, Gold
+  const all = uniq([...wetten, ...solo]), ps = picksAus(all), richtig = ps.filter((p) => p.ok).length;
+  const kombiSiege = all.filter((w) => w.picks.length > 1 && status(w) === "gewonnen").length;
+  const THEMEN = [
+    { t: "Treffer", was: "richtige Tipps", wert: richtig, stufen: [10, 25, 50], fmt: (n) => String(n) },
+    { t: "Serie", was: "Tipps am Stück richtig", wert: maxSerie(ps), stufen: [3, 5, 10], fmt: (n) => String(n) },
+    { t: "Gewinn", was: "Spielgeld erspielt", wert: Math.floor(erspielt()), stufen: [100, 500, 1500], fmt: (n) => "Fr. " + n },
+    { t: "Kombis", was: "Kombis gewonnen", wert: kombiSiege, stufen: [1, 5, 15], fmt: (n) => String(n) },
+  ];
+  const FARBE = ["bronze", "silber", "gold"], NAME = ["Bronze", "Silber", "Gold"];
+  const total = THEMEN.length * 3, ok = THEMEN.reduce((s, x) => s + x.stufen.filter((v) => x.wert >= v).length, 0);
+  const c = h("div", "card vitrine");
+  const kopf = h("div", "vit-kopf"); kopf.append(h("h3", null, "Pokale"), h("span", null, ok + " von " + total)); c.append(kopf);
+  THEMEN.forEach((x) => {
+    const naechste = x.stufen.findIndex((v) => x.wert < v);
+    const zeile = h("div", "vit-thema");
+    zeile.append(h("b", null, x.t), h("small", null, naechste < 0 ? "Alle Medaillen geholt" : NAME[naechste] + ": " + x.fmt(Math.min(x.wert, x.stufen[naechste])) + " / " + x.fmt(x.stufen[naechste]) + " " + x.was));
+    const regal = h("div", "vit-regal");
+    x.stufen.forEach((v, i) => {
+      const hat = x.wert >= v;
+      const m = h("div", "vit-med " + FARBE[i] + (hat ? " hat" : ""));
+      m.setAttribute("aria-label", NAME[i] + " " + x.t + ": " + (hat ? "geschafft" : "noch nicht"));
+      m.append(h("span", "vit-kreis", hat ? x.fmt(v).replace("Fr. ", "") : "?"), h("small", null, NAME[i]));
+      regal.append(m);
+    });
+    c.append(zeile, regal, h("div", "vit-brett"));
+  });
+  return c;
 }
 applyDesign();
 

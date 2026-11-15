@@ -614,6 +614,21 @@ body.detail-offen { overflow: hidden; }
 .sports.ligen { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); overflow: visible; }
 .sports.ligen button { white-space: normal; line-height: 1.15; font-size: .84rem; padding: .5rem .3rem; min-height: 44px; }
 h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; color: var(--soft); margin: 1rem 0 .4rem; }
+.vitrine { padding-bottom: .4rem; }
+.vit-kopf { display: flex; justify-content: space-between; align-items: baseline; }
+.vit-kopf h3 { margin: 0; }
+.vit-kopf span { font-size: .85rem; color: var(--soft); }
+.vit-thema { margin-top: .9rem; display: flex; flex-direction: column; }
+.vit-thema b { font-size: .95rem; }
+.vit-thema small { font-size: .78rem; color: var(--soft); }
+.vit-regal { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; margin-top: .5rem; }
+.vit-med { text-align: center; }
+.vit-kreis { width: 52px; height: 52px; margin: 0 auto; border-radius: 50%; border: 4px solid var(--m); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .95rem; color: var(--m); background: var(--card); opacity: .35; }
+.vit-med.hat .vit-kreis { opacity: 1; background: var(--mlt); }
+.vit-med small { display: block; font-size: .72rem; color: var(--soft); margin-top: .2rem; }
+.vit-med.bronze { --m: #A9713C; --mlt: #F4E6D8; } .vit-med.silber { --m: #8E949B; --mlt: #EDEFF1; } .vit-med.gold { --m: #C98A1B; --mlt: #FBF0D9; }
+[data-design="dunkel"] .vit-med, [data-design="neon"] .vit-med, [data-design="sonne"] .vit-med { --mlt: #24272E; }
+.vit-brett { height: 7px; background: #8A5A33; border-radius: 2px; margin: .45rem 0 0; }
 </style>
 <meta name="description" content="Sporttipps für Fussball und Tennis: sichere, mittlere und riskante Tipps mit echten Quoten, Kombis und Tipprunden mit Kollegen. Nur mit Spielgeld, kostenlos.">
 
@@ -724,8 +739,8 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
     <div id="stufeBox"></div>
     <h2 class="h2klein">Deine Statistik</h2>
     <div id="statistik"></div>
-    <div id="kontoBox"></div>
     <div id="erfolgeBox"></div>
+    <div id="kontoBox"></div>
     <h2 class="h2klein">Einstellungen</h2>
     <div id="profilBox"></div>
   </section>
