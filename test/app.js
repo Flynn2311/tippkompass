@@ -563,40 +563,44 @@ function renderSchein() {
   const form = h("div", "stake");
   const gk = hatGruppe ? konto(wetten, gruppe.start) : null;
   const ende = hatGruppe && gruppe.ende && new Date(gruppe.ende) < now;
-  const beide = hatGruppe && !ende && gk.stand >= 1;
-  const frei = Math.max(0, Math.floor(Math.min(spielgeld(), beide ? gk.stand : Infinity) * 100) / 100);
-  const lab = h("label", null, "Mit Spielgeld setzen · verfügbar " + fr(frei)); lab.htmlFor = "einsatz";
-  if (hatGruppe) form.append(h("p", "sub ziel-info", beide ? "Zählt für dein Spielgeld und gleichzeitig in der Gruppe «" + gruppe.name + "»." : (ende ? "Die Gruppenrunde ist vorbei. " : "In der Gruppe hast du kein Geld mehr. ") + "Diese Wette zählt nur für dein Spielgeld."));
+  const gOk = hatGruppe && !ende;
+  const geldS = Math.max(0, Math.floor(spielgeld() * 100) / 100), geldG = gOk ? Math.max(0, Math.floor(gk.stand * 100) / 100) : 0;
+  const frei = Math.max(geldS, geldG);
+  const lab = h("label", null, gOk ? "Einsatz · Spielgeld " + fr(geldS) + " · Gruppe " + fr(geldG) : "Mit Spielgeld setzen · verfügbar " + fr(geldS)); lab.htmlFor = "einsatz";
   const inp = h("input"); inp.id = "einsatz"; inp.type = "text"; inp.inputMode = "decimal"; inp.autocomplete = "off"; inp.maxLength = 9; inp.value = Math.min(10, Math.floor(frei));
   let useVers = false, useBoost = false;
   const betrag = () => { const t = String(inp.value).trim().replace(/['’\s]/g, "").replace(",", "."); return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN; };
   const gew = h("div", "lbl"); const upd = () => { const v = betrag(); gew.textContent = isNaN(v) ? "Gib einen Betrag in Franken ein, z. B. 10" : "Möglicher Gewinn: " + fr(v * q * (useBoost ? 1.1 : 1)); }; inp.oninput = upd; upd();
-  const btn = h("button", "place", "Setzen");
-  btn.disabled = frei < 1;
-  btn.onclick = async () => {
+  const MODI = gOk ? [["solo", "Selber", geldS], ["gruppe", "In Gruppe", geldG], ["beide", "Beides", Math.min(geldS, geldG)]] : [["solo", "Setzen", geldS]];
+  const reihe = h("div", "place-row" + (MODI.length > 1 ? " drei" : ""));
+  const knoepfe = [];
+  const setzen = async (modus, max) => {
     const e = Math.round((betrag() || 0) * 100) / 100;
     if (isNaN(betrag())) { toast("Gib einen Betrag ein, z. B. 10"); inp.focus(); return; }
     if (e < 1) { toast("Der Einsatz muss mindestens Fr. 1 sein"); inp.focus(); return; }
-    if (e > frei) { toast("So viel hast du nicht mehr: " + fr(frei)); return; }
-    btn.disabled = true;
+    if (e > max) { toast("So viel hast du " + (modus === "gruppe" ? "in der Gruppe" : modus === "beide" ? "nicht in beiden Töpfen" : "nicht mehr") + ": " + fr(max)); return; }
+    knoepfe.forEach((x) => (x.disabled = true));
     const srv = await serverZeit();
-    btn.disabled = false;
+    knoepfe.forEach((x) => (x.disabled = false));
     if (!srv) { toast("Keine Verbindung. Setzen geht nur mit Internet."); return; }
     const zuSpaet = schein.filter((s) => { const g = spiel(s.g); return !g || g.res || new Date(g.zeit).getTime() <= srv; });
     if (zuSpaet.length) { schein = schein.filter((s) => !zuSpaet.includes(s)); speichern(); renderAll(); toast(zuSpaet.length === 1 ? "Ein Spiel hat schon angefangen und wurde entfernt" : zuSpaet.length + " Spiele haben schon angefangen und wurden entfernt"); return; }
     const w = { id: "w" + Date.now(), ts: srv, srv, einsatz: e, picks: schein.map((s) => ({ g: s.g, k: s.k, q: out(spiel(s.g), s.k).q })) };
     if (useVers) w.vers = true; if (useBoost) w.boost = true;
-    if (beide) { w.beide = true; wetten.push({ ...w, picks: w.picks.map((p) => ({ ...p })) }); }
-    solo.push(w);
-    schein = []; speichern(); renderAll(); toast("Gesetzt");
+    if (modus === "beide") { w.beide = true; wetten.push({ ...w, picks: w.picks.map((p) => ({ ...p })) }); solo.push(w); }
+    else (modus === "gruppe" ? wetten : solo).push(w);
+    schein = []; speichern(); renderAll(); toast(modus === "beide" ? "Gesetzt, zählt für beides" : modus === "gruppe" ? "In der Gruppe gesetzt" : "Gesetzt");
   };
+  MODI.forEach(([m, t, max]) => { const b = h("button", "place", t); b.disabled = max < 1; b.onclick = () => setzen(m, max); knoepfe.push(b); reihe.append(b); });
+  const btn = reihe;
   const jk = h("div", "joker-opts");
   const jopt = (name, anz, onc) => { const b = h("button", "jopt", name + " · " + anz + " übrig"); b.setAttribute("aria-pressed", "false"); b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); onc(on); }; jk.append(b); };
   if (jokerUebrig("j-vers") > 0 && schein.length > 1) jopt("Versicherung", jokerUebrig("j-vers"), (on) => (useVers = on));
   if (jokerUebrig("j-boost") > 0) jopt("Quoten-Boost +10 %", jokerUebrig("j-boost"), (on) => { useBoost = on; upd(); });
   form.append(lab, inp, gew);
   if (jk.children.length) form.append(jk);
-  form.append(btn);
+  form.append(reihe);
+  if (gOk) form.append(h("p", "sub ziel-info", "Selber: nur dein Spielgeld. In Gruppe: nur die Gruppen-Rangliste. Beides: zählt für beide gleichzeitig."));
   if (spielgeld() < 1 && !konto(solo, SOLO_START).offen) { const r = h("button", "btn ghost", "Spielgeld neu starten (" + fr(SOLO_START) + ")"); r.onclick = () => { xpBank += gewinnPlus(solo.filter((w) => !wetten.some((x) => x.id === w.id))); solo = []; resetTs = Date.now(); speichern(); renderAll(); toast("Neues Spielgeld"); }; form.append(r); }
   const nur = h("button", "btn ghost", "Nur tippen, ohne Einsatz"); nur.style.marginTop = ".5rem";
   nur.onclick = async () => {
@@ -622,7 +626,7 @@ function renderMeineWetten() {
     if (!solo.length && !wetten.length) box.append(h("p", "sub", "Noch keine Wetten. Sobald du etwas setzt, siehst du es hier."));
   }
   const nurG = wetten.filter((w) => !solo.some((x) => x.id === w.id));
-  if (nurG.length) { box.append(h("h3", null, "Nur in der Gruppe (ältere Wetten)")); nurG.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w))); }
+  if (nurG.length) { box.append(h("h3", null, "Nur in der Gruppe")); nurG.slice().sort((a, b) => b.ts - a.ts).forEach((w) => box.append(wettKarte(w))); }
 }
 function wettKarte(w) {
   const st = status(w), q = wQuote(w);
