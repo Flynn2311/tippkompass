@@ -1106,6 +1106,8 @@ const DESIGNS = [
   { id: "sw", n: "Schwarz-Weiss", st: 3, bg: "#FFFFFF", ac: "#000000", tc: "#000000" },
   { id: "sonne", n: "Sonnen\u00aduntergang", st: 4, bg: "#2A1A17", ac: "#E8692B", tc: "#2A1A17" },
   { id: "neon", n: "Neon-Arena", st: 5, bg: "#000000", ac: "#B6FF3B", tc: "#000000" },
+  { id: "eiche", n: "Eiche", st: 3, bg: "#D7BC8F", ac: "#8A5A2B", tc: "#3B2A1A" },
+  { id: "nuss", n: "Nussbaum", st: 5, bg: "#3A2618", ac: "#D9A85C", tc: "#24170F" },
 ];
 function gewinnPlus(list) { return (list || []).reduce((t, w) => (status(w) === "gewonnen" ? t + Math.max(0, w.einsatz * wQuote(w) - w.einsatz) : t), 0); }
 function erspielt() { return xpBank + gewinnPlus(uniq([...solo, ...wetten])); }
