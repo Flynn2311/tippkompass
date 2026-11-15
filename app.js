@@ -739,21 +739,13 @@ function renderProfil() {
   const box = $("#profilBox"); box.replaceChildren();
   if (!profil) return;
   { const sb = $("#stufeBox"); if (sb) sb.replaceChildren(stufeCard()); const eb = $("#erfolgeBox"); if (eb) eb.replaceChildren(erfolgeCard()); }
-  const c = h("div", "card"); c.append(h("h3", null, "Name und Lieblingsteam"));
-  const f = h("div", "field"); const l = h("label", null, "Spielername"); l.htmlFor = "nick"; const i = h("input"); i.id = "nick"; i.value = profil.nick; i.maxLength = 20;
-  i.onchange = () => { profil.nick = i.value.trim().slice(0, 20) || profil.nick; speichern(); renderGruppe(); };
-  f.append(l, i); c.append(f);
-  const tf = h("div", "field"); const tl = h("label", null, "Lieblingsteam"); tl.htmlFor = "team";
-  const sel = h("select"); sel.id = "team"; sel.append(new Option("Kein Lieblingsteam", ""));
-  alleTeams().forEach((t) => sel.append(new Option(t, t))); sel.value = team;
-  sel.onchange = () => { team = sel.value; store.set("team", team); speichern(); renderTipps(); toast(team ? "Spiele von " + team + " stehen jetzt oben." : "Lieblingsteam entfernt."); };
-  tf.append(tl, sel); c.append(tf);
+  const c = h("div", "card"); c.append(h("h3", null, "Gruppe"));
   if (profil.gruppe) {
     const lv = h("button", "btn ghost", "Gruppe verlassen");
     lv.onclick = () => { if (lv.dataset.ok) { profil.gruppe = null; gruppe = null; wetten = []; speichern(); renderAll(); } else { lv.dataset.ok = "1"; lv.textContent = "Sicher? Deine Gruppen-Wetten gehen verloren. Nochmals tippen."; } };
     c.append(lv);
+    box.append(c);
   }
-  box.append(c);
   const ac = h("div", "card"); ac.append(h("h3", null, "Konto"));
   if (authUser) {
     ac.append(h("p", "sub", "Angemeldet als " + (authUser.email || "Google-Konto") + ". Dein Spielstand ist online gesichert und auf jedem Gerät da."));
@@ -770,13 +762,6 @@ function renderProfil() {
     const li = h("button", "btn", "Anmelden oder Konto erstellen"); li.onclick = () => openOnb(0); ac.append(li);
   }
   const kb = $("#kontoBox"); if (kb) kb.replaceChildren(ac); else box.append(ac);
-  const info = h("div", "card");
-  info.append(h("h3", null, "So nutzt du Tippkompass"));
-  const erk = h("button", "btn ghost", "Erklärung zum Tippen ansehen"); erk.onclick = () => { erklAusProfil = true; openOnb("erkl"); }; info.append(erk);
-  const ol = h("ol", "steps");
-  ["Schau dir an, worauf ich setzen würde und wovon ich die Finger lasse.", "Wähl oben, ob du sicher oder mutiger spielen willst.", "Kopier den Tipp oder die Kombi und setz selbst bei Sporttip, wenn du echtes Geld einsetzen willst.", "Oder tipp mit deinen Kollegen in einer Gruppe mit Startgeld."].forEach((t) => ol.append(h("li", null, t)));
-  info.append(ol, h("p", "sub", "Tippkompass ist eine Tipp-Hilfe. In der App wird kein echtes Geld gesetzt. Nicht mit Swisslos verbunden."));
-  box.append(info);
   const help = h("div", "help");
   help.append(h("b", null, "Wird es zu viel? "), "SOS-Spielsucht hilft gratis und anonym, rund um die Uhr: Helpline ", h("b", null, "0800 040 080"), " oder ");
   const a = h("a", null, "sos-spielsucht.ch"); a.href = "https://www.sos-spielsucht.ch"; help.append(a, ".");
