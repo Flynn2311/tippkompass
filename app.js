@@ -590,14 +590,45 @@ function wettKarte(w) {
     const g = spiel(p.g);
     if (!g) { el.append(h("div", "vs", "· Spiel nicht mehr in den Daten. Nach 10 Tagen gibt es den Einsatz zurück.")); return; }
     if (g.res === "x") { el.append(h("div", "vs", "· " + g.h + " – " + g.a + ": abgesagt, Einsatz zurück")); return; }
-    const zeile = h("button", "pick-btn"); zeile.setAttribute("aria-expanded", "false");
-    zeile.append(h("span", "pk-ic " + (g.res ? (g.res === p.k ? "ok" : "falsch") : "offen"), g.res ? (g.res === p.k ? "✓" : "✗") : "·"), h("span", "pk-t", label(g, p.k) + (p.k === "u" ? "" : " gewinnt")), h("small", null, g.h + " – " + g.a), h("span", "pk-pf", "Infos"));
-    const info = spielInfo(g, p.k); info.hidden = true;
-    zeile.onclick = () => { const o = zeile.getAttribute("aria-expanded") === "true"; zeile.setAttribute("aria-expanded", String(!o)); info.hidden = o; };
-    el.append(zeile, info);
+    const zeile = h("button", "pick-btn"); zeile.setAttribute("aria-haspopup", "dialog");
+    zeile.append(h("span", "pk-ic " + (g.res ? (g.res === p.k ? "ok" : "falsch") : "offen"), g.res ? (g.res === p.k ? "✓" : "✗") : "·"), h("span", "pk-t", label(g, p.k) + (p.k === "u" ? "" : " gewinnt")), h("small", null, g.h + " – " + g.a), h("span", "pk-pf", "Ansehen ›"));
+    zeile.onclick = () => openDetail(g, p.k, w, zeile);
+    el.append(zeile);
   });
   return el;
 }
+/* Detailseite für einen Tipp: öffnet sich über der App, Zurück schliesst sie */
+let detailEl = null, detailFokus = null;
+function openDetail(g, k, w, vonEl) {
+  closeDetail(true);
+  detailFokus = vonEl || document.activeElement;
+  const o = out(g, k), st = w ? status(w) : null;
+  const d = h("div", "detail"); d.setAttribute("role", "dialog"); d.setAttribute("aria-modal", "true"); d.setAttribute("aria-labelledby", "detailTitel");
+  const bar = h("div", "detail-bar"); const zur = h("button", "detail-back", "‹ Zurück"); zur.onclick = () => history.back(); bar.append(zur);
+  const inh = h("div", "detail-in");
+  inh.append(h("div", "detail-k", sportName[g.sport] + " · " + g.liga));
+  const t = h("h2", null, g.h + " – " + g.a); t.id = "detailTitel"; inh.append(t);
+  const tipp = h("div", "detail-tipp");
+  tipp.append(h("span", null, "Dein Tipp"), h("b", null, label(g, k) + (k === "u" ? "" : " gewinnt")), h("span", "detail-q", "Quote " + num(o.q, 2)));
+  inh.append(tipp);
+  if (w) {
+    const q = wQuote(w);
+    const txt = st === "gewonnen" ? "Gewonnen: +" + fr(w.einsatz * q - w.einsatz) : st === "verloren" ? "Verloren: −" + fr(w.einsatz) : st === "zurueck" || st === "ungueltig" ? "Einsatz zurück: " + fr(w.einsatz) : "Offen · möglicher Gewinn " + fr(w.einsatz * q);
+    inh.append(h("div", "detail-st " + st, (w.picks.length > 1 ? "Kombi mit " + w.picks.length + " Tipps · " : "") + "Einsatz " + fr(w.einsatz) + " · " + txt));
+  }
+  inh.append(spielInfo(g, k));
+  d.append(bar, inh);
+  document.body.append(d); document.body.classList.add("detail-offen");
+  detailEl = d; history.pushState({ detail: 1 }, "");
+  zur.focus();
+}
+function closeDetail(still) {
+  if (!detailEl) return;
+  detailEl.remove(); detailEl = null; document.body.classList.remove("detail-offen");
+  if (!still && detailFokus && detailFokus.isConnected) detailFokus.focus();
+}
+window.addEventListener("popstate", () => closeDetail());
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && detailEl) history.back(); });
 function spielInfo(g, k) {
   const d = h("div", "spielinfo");
   const anpfiff = new Date(g.zeit);

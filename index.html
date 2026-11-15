@@ -582,6 +582,23 @@ h2 { font-size: 1.6rem; font-weight: 500; margin-top: 2rem; padding-top: .9rem; 
 .ziel-info { margin-top:.5rem; font-size:.82rem; }
 .place, .stake .place { background: #F3F2EF !important; color: #14161A !important; }
 .place:disabled { color: #6B6E75 !important; }
+.detail { position: fixed; inset: 0; z-index: 60; background: var(--bg); color: var(--ink); overflow-y: auto; -webkit-overflow-scrolling: touch; animation: detailIn .18s ease-out; }
+@keyframes detailIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .detail { animation: none; } }
+body.detail-offen { overflow: hidden; }
+.detail-bar { position: sticky; top: 0; background: var(--bg); border-bottom: 1px solid var(--line); padding: .4rem .8rem; padding-top: max(.4rem, env(safe-area-inset-top)); }
+.detail-back { background: none; border: 0; font: inherit; font-weight: 700; font-size: 1rem; color: var(--rasen); padding: .6rem .2rem; min-height: 44px; cursor: pointer; }
+.detail-in { max-width: 640px; margin: 0 auto; padding: 1rem 1rem 3rem; }
+.detail-k { font-size: .8rem; color: var(--soft); text-transform: uppercase; letter-spacing: .04em; }
+.detail-in h2 { margin: .2rem 0 1rem; font-size: 1.7rem; line-height: 1.2; }
+.detail-tipp { display: grid; grid-template-columns: 1fr auto; gap: .1rem .6rem; background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: .8rem .9rem; margin-bottom: .7rem; }
+.detail-tipp span:first-child { grid-column: 1 / -1; font-size: .8rem; color: var(--soft); }
+.detail-tipp b { font-size: 1.15rem; }
+.detail-q { font-weight: 700; color: var(--rasen); align-self: center; }
+.detail-st { font-size: .92rem; padding: .6rem .8rem; border-radius: 6px; background: var(--card); border: 1px solid var(--line); margin-bottom: 1rem; }
+.detail-st.gewonnen { border-color: var(--rasen); background: var(--rasen-lt); }
+.detail-st.verloren { border-color: var(--rot); background: var(--rot-lt); }
+.detail .spielinfo { display: block !important; }
 </style>
 <meta name="description" content="Sporttipps für Fussball und Tennis: sichere, mittlere und riskante Tipps mit echten Quoten, Kombis und Tipprunden mit Kollegen. Nur mit Spielgeld, kostenlos.">
 
