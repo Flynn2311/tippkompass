@@ -555,6 +555,7 @@ function renderSchein() {
     if (useVers) w.vers = true; if (useBoost) w.boost = true;
     if (modus === "beide") { w.beide = true; wetten.push({ ...w, picks: w.picks.map((p) => ({ ...p })) }); solo.push(w); }
     else (modus === "gruppe" ? wetten : solo).push(w);
+    if (modus !== "gruppe") weltEinreichen(w);
     schein = []; speichern(); renderAll(); toast(modus === "beide" ? "Gesetzt, zählt für beides" : modus === "gruppe" ? "In der Gruppe gesetzt" : "Gesetzt");
   };
   MODI.forEach(([m, t, max]) => { const b = h("button", "place", t); b.disabled = max < 1; b.onclick = () => setzen(m, max); knoepfe.push(b); reihe.append(b); });
@@ -1294,7 +1295,7 @@ function renderShop() {
   box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben. Das Tagesangebot wechselt um Mitternacht. Titel und Designs verdienst du dir über Stufen und Errungenschaften."));
 }
 
-function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
+function renderAll() { renderWelt(); renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
 if (!profil) openOnb(1);
 renderAll();
 initDb();
@@ -1358,3 +1359,54 @@ window.testSeed = function () {
   ] : [];
 };
 window.testReset = function () { Object.keys(localStorage).filter((k) => k.startsWith("tkt_")).forEach((k) => localStorage.removeItem(k)); location.reload(); };
+
+/* ================= Weltrangliste der Woche (Testversion: mit virtuellen Spielern) ================= */
+var weltDemo = null, weltDabei = store.get("weltDabei", true), weltWetten = store.get("weltWetten", []);
+fetch("rangliste-demo.json?z=" + Date.now()).then((r) => r.json()).then((d) => { weltDemo = d; renderWelt(); }).catch(() => {});
+function weltSpiele() { return [...SPIELE, ...ARCHIV]; }
+function weltAuswertung() {
+  if (!weltDemo || !window.Pruefung) return null;
+  const now = Date.now();
+  const alle = weltDemo.wetten.concat(weltDabei ? weltWetten : []);
+  const res = Pruefung.pruefe({ wetten: alle, spiele: weltSpiele(), start: weltDemo.start, now });
+  const namen = { ...weltDemo.namen, ich: { nick: profil?.nick || "Du" } };
+  return { res, rang: Pruefung.rangliste(res, namen), ich: res.spieler.ich };
+}
+function weltEinreichen(w) {
+  if (!weltDabei || !window.Pruefung || !weltWetten) return;
+  const a = weltAuswertung(); const frei = a?.ich ? a.ich.stand : Pruefung.BUDGET;
+  if (a?.ich?.gesperrt) return;
+  if (w.einsatz > frei) { toast("Zählt nicht für die Weltrangliste: Wochen-Spielgeld (Fr. " + Math.floor(frei) + ") reicht nicht."); return; }
+  weltWetten.push({ id: w.id + "-" + Math.random().toString(36).slice(2, 6), uid: "ich", ts: Date.now(), einsatz: w.einsatz, picks: w.picks.map((p) => ({ g: p.g, k: p.k, q: p.q })) });
+  store.set("weltWetten", weltWetten); renderWelt();
+}
+function renderWelt() {
+  const box = $("#weltBox"); if (!box) return; box.replaceChildren();
+  const c = h("div", "card");
+  c.append(h("p", "sub", "Alle Spieler weltweit, jede Woche neu ab Montag. Jeder hat dafür Fr. 1'000 Wochen-Spielgeld. Wetten mit «Selber» oder «Beides» zählen automatisch."));
+  const a = weltAuswertung();
+  if (!a) { c.append(h("p", "sub", "Rangliste wird geladen …")); box.append(c); return; }
+  const ich = weltDabei ? a.ich : null;
+  if (ich && ich.gesperrt) {
+    const sp = h("div", "welt-sperre");
+    sp.append(h("b", null, "Du bist von der Weltrangliste ausgeschlossen."), h("p", null, "Bei deinen Wetten wurden Unstimmigkeiten gefunden: " + ich.verstoesse[0].grund + ". Alles andere in der App kannst du weiter nutzen."), h("p", "sub", "Ist das ein Fehler? Melde dich über die Kontaktadresse auf der Datenschutzseite."));
+    c.append(sp);
+  } else if (ich) {
+    const platz = a.rang.liste.find((z) => z.uid === "ich")?.platz;
+    const p = h("p", "welt-platz"); p.append("Du bist auf Platz ", h("b", null, String(platz)), " von " + a.rang.liste.length);
+    c.append(p, h("p", "sub", "Diese Woche: " + (ich.gewinn >= 0 ? "+" : "") + fr(ich.gewinn) + " · Wochen-Spielgeld übrig " + fr(ich.stand) + (ich.offen ? " · " + ich.offen + " offen" : "")));
+  } else if (weltDabei) c.append(h("p", "welt-platz", "Setz eine Wette mit «Selber» oder «Beides», dann erscheinst du hier."));
+  const ol = h("ol", "welt-top");
+  a.rang.liste.slice(0, 10).forEach((z) => { const li = h("li", z.uid === "ich" ? "ich" : ""); li.append(h("span", "pl", String(z.platz)), h("span", null, z.nick), h("span", "gw", (z.gewinn >= 0 ? "+" : "") + fr(z.gewinn))); ol.append(li); });
+  c.append(ol);
+  const mine = a.rang.liste.find((z) => z.uid === "ich");
+  if (mine && mine.platz > 10) { const li = h("li", "ich"); li.append(h("span", "pl", String(mine.platz)), h("span", null, mine.nick), h("span", "gw", (mine.gewinn >= 0 ? "+" : "") + fr(mine.gewinn))); const o2 = h("ol", "welt-top"); o2.append(li); c.append(h("p", "sub", "…"), o2); }
+  c.append(h("p", "sub", "Jede Wette wird nachgerechnet: echte Resultate, echte Quoten, Anpfiffzeit. Wer schummelt, wird ausgeschlossen. " + a.rang.gesperrt.length + " Spieler sind diese Woche gesperrt."));
+  const sw = h("label", "welt-schalter"); const cb = h("input"); cb.type = "checkbox"; cb.checked = weltDabei; cb.onchange = () => { weltDabei = cb.checked; store.set("weltDabei", weltDabei); renderWelt(); };
+  sw.append(h("span", null, "In der Weltrangliste mitmachen (nur dein Spitzname ist sichtbar)"), cb); c.append(sw);
+  const t = h("div", "welt-test"); t.append(h("small", "sub", "Nur in der Testversion:"));
+  const b1 = h("button", "btn ghost", "Als Schummler testen"); b1.onclick = () => { const g = SPIELE.find((x) => offen(x)); if (!g) return; weltWetten.push({ id: "hack" + Date.now(), uid: "ich", ts: Date.now(), einsatz: 500, picks: [{ g: g.id, k: "h", q: 50 }] }); store.set("weltWetten", weltWetten); renderWelt(); toast("Gefälschte Quote 50 eingereicht"); };
+  const b2 = h("button", "btn ghost", "Meine Welt-Wetten löschen"); b2.onclick = () => { weltWetten = []; store.set("weltWetten", weltWetten); renderWelt(); };
+  t.append(b1, b2); c.append(t);
+  box.append(c);
+}

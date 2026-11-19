@@ -629,6 +629,19 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
 .vit-med.bronze { --m: #A9713C; --mlt: #F4E6D8; } .vit-med.silber { --m: #8E949B; --mlt: #EDEFF1; } .vit-med.gold { --m: #C98A1B; --mlt: #FBF0D9; }
 [data-design="dunkel"] .vit-med, [data-design="neon"] .vit-med, [data-design="sonne"] .vit-med { --mlt: #24272E; }
 .vit-brett { height: 7px; background: #8A5A33; border-radius: 2px; margin: .45rem 0 0; }
+.welt-top { list-style: none; margin: .5rem 0 0; padding: 0; }
+.welt-top li { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: .4rem; padding: .45rem .2rem; border-bottom: 1px solid var(--line); font-size: .95rem; }
+.welt-top li.ich { background: var(--rasen-lt); font-weight: 700; }
+.welt-top .pl { font-family: var(--serif); font-size: 1.1rem; color: var(--soft); text-align: center; }
+.welt-top li:nth-child(1) .pl { color: #C98A1B; } .welt-top li:nth-child(2) .pl { color: #8E949B; } .welt-top li:nth-child(3) .pl { color: #A9713C; }
+.welt-top .gw { font-weight: 700; }
+.welt-platz { font-size: 1.05rem; margin: .4rem 0 .2rem; }
+.welt-platz b { font-family: var(--serif); font-size: 1.6rem; }
+.welt-sperre { border: 2px solid var(--rot); background: var(--rot-lt); border-radius: 6px; padding: .8rem; margin-top: .4rem; }
+.welt-sperre b { color: var(--rot); }
+.welt-schalter { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .6rem; }
+.welt-test { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; padding-top: .6rem; border-top: 1px dashed var(--line); }
+.welt-test button { font-size: .8rem; }
 </style>
 <meta name="description" content="Sporttipps für Fussball und Tennis: sichere, mittlere und riskante Tipps mit echten Quoten, Kombis und Tipprunden mit Kollegen. Nur mit Spielgeld, kostenlos.">
 
@@ -727,6 +740,8 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
   <section class="view" id="v-gruppe" hidden>
     <h2>Gruppe</h2>
     <div id="gruppeBox"></div>
+    <h2 class="h2klein">Weltrangliste der Woche</h2>
+    <div id="weltBox"></div>
   </section>
 
   <section class="view" id="v-profil" hidden>
@@ -823,6 +838,7 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
   </nav>
 </div>
 <script>window.tkFirebase = Promise.resolve(null);</script>
+<script src="../scripts/pruefung.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

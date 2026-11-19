@@ -17,6 +17,9 @@ concurrency:
   group: daten-update
   cancel-in-progress: false
 
+env:
+  FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -31,6 +34,15 @@ jobs:
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           FORCE_ODDS: ${{ github.event_name == 'workflow_dispatch' && inputs.quoten }}
         run: node scripts/update.mjs
+      - name: Weltrangliste prüfen
+        # Läuft nur, wenn das Secret FIREBASE_SA eingerichtet ist. Ein Fehler hier stoppt das Daten-Update nicht.
+        if: ${{ env.FIREBASE_SA != '' }}
+        continue-on-error: true
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SA }}
+        run: |
+          npm install --no-save --no-audit --no-fund firebase-admin@12 >/dev/null
+          node scripts/rangliste.mjs
       - name: Speichern
         run: |
           if git diff --quiet data.json; then echo "Nichts zu speichern"; exit 0; fi
