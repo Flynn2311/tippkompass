@@ -1394,13 +1394,13 @@ function renderWelt() {
   } else if (ich) {
     const platz = a.rang.liste.find((z) => z.uid === "ich")?.platz;
     const p = h("p", "welt-platz"); p.append("Du bist auf Platz ", h("b", null, String(platz)), " von " + a.rang.liste.length);
-    c.append(p, h("p", "sub", "Diese Woche: " + (ich.gewinn >= 0 ? "+" : "") + fr(ich.gewinn) + " · Wochen-Spielgeld übrig " + fr(ich.stand) + (ich.offen ? " · " + ich.offen + " offen" : "")));
+    c.append(p, h("p", "sub", "Diese Woche: " + (ich.gewinn >= 0 ? "+" : "−") + fr(Math.abs(ich.gewinn)) + " · Wochen-Spielgeld übrig " + fr(ich.stand) + (ich.offen ? " · " + ich.offen + " offen" : "")));
   } else if (weltDabei) c.append(h("p", "welt-platz", "Setz eine Wette mit «Selber» oder «Beides», dann erscheinst du hier."));
   const ol = h("ol", "welt-top");
-  a.rang.liste.slice(0, 10).forEach((z) => { const li = h("li", z.uid === "ich" ? "ich" : ""); li.append(h("span", "pl", String(z.platz)), h("span", null, z.nick), h("span", "gw", (z.gewinn >= 0 ? "+" : "") + fr(z.gewinn))); ol.append(li); });
+  a.rang.liste.slice(0, 10).forEach((z) => { const li = h("li", z.uid === "ich" ? "ich" : ""); li.append(h("span", "pl", String(z.platz)), h("span", null, z.nick), h("span", "gw", (z.gewinn >= 0 ? "+" : "−") + fr(Math.abs(z.gewinn)))); ol.append(li); });
   c.append(ol);
   const mine = a.rang.liste.find((z) => z.uid === "ich");
-  if (mine && mine.platz > 10) { const li = h("li", "ich"); li.append(h("span", "pl", String(mine.platz)), h("span", null, mine.nick), h("span", "gw", (mine.gewinn >= 0 ? "+" : "") + fr(mine.gewinn))); const o2 = h("ol", "welt-top"); o2.append(li); c.append(h("p", "sub", "…"), o2); }
+  if (mine && mine.platz > 10) { const li = h("li", "ich"); li.append(h("span", "pl", String(mine.platz)), h("span", null, mine.nick), h("span", "gw", (mine.gewinn >= 0 ? "+" : "−") + fr(Math.abs(mine.gewinn)))); const o2 = h("ol", "welt-top"); o2.append(li); c.append(h("p", "sub", "…"), o2); }
   c.append(h("p", "sub", "Jede Wette wird nachgerechnet: echte Resultate, echte Quoten, Anpfiffzeit. Wer schummelt, wird ausgeschlossen. " + a.rang.gesperrt.length + " Spieler sind diese Woche gesperrt."));
   const sw = h("label", "welt-schalter"); const cb = h("input"); cb.type = "checkbox"; cb.checked = weltDabei; cb.onchange = () => { weltDabei = cb.checked; store.set("weltDabei", weltDabei); renderWelt(); };
   sw.append(h("span", null, "In der Weltrangliste mitmachen (nur dein Spitzname ist sichtbar)"), cb); c.append(sw);

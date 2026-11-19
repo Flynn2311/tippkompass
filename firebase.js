@@ -1,7 +1,7 @@
 // Firebase: Anmeldung und Online-Spielstand
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc, onSnapshot, collection, query, where, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB1s_gUsDwx5kgW8cxbJEX-ReOm6tec5kk",
@@ -30,6 +30,8 @@ window.tkFirebase = (async () => {
           onSnapshot(cb) { return onSnapshot(ref, (s) => cb(s.exists() ? s.data() : null), () => {}); },
         };
       },
+      // Weltrangliste: jede Wette ein eigenes Dokument, Zeit setzt der Server
+      async wette(data) { await addDoc(collection(fs, "bets"), { ...sauber(data), ts: serverTimestamp() }); },
       mitglieder(code, cb) {
         const q = query(collection(fs, "members"), where("gruppe", "==", code));
         return onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }))), () => {});

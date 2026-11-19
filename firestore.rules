@@ -58,6 +58,35 @@ service cloud.firestore {
       allow delete: if signedIn() && resource.data.by == request.auth.uid;
     }
 
+    // ===== Weltrangliste =====
+    // Jede Wette ein eigenes Dokument: Zeit setzt der Server, danach nicht mehr änderbar
+    match /bets/{id} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'ts', 'einsatz', 'picks'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.ts == request.time
+        && request.resource.data.einsatz is number
+        && request.resource.data.picks is list && request.resource.data.picks.size() >= 1 && request.resource.data.picks.size() <= 10;
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    // Mitmachen ja/nein und Spitzname für die Weltrangliste
+    match /welt/{uid} {
+      allow read, delete: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['nick', 'dabei'])
+        && isNick(request.resource.data.nick) && request.resource.data.dabei is bool;
+    }
+    // Rangliste und eigener Platz: lesen ja, schreiben nur das Prüf-Skript (Admin)
+    match /rangliste/{doc} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /rang/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
     // Alles andere ist gesperrt
     match /{document=**} {
       allow read, write: if false;

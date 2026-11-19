@@ -555,6 +555,7 @@ function renderSchein() {
     if (useVers) w.vers = true; if (useBoost) w.boost = true;
     if (modus === "beide") { w.beide = true; wetten.push({ ...w, picks: w.picks.map((p) => ({ ...p })) }); solo.push(w); }
     else (modus === "gruppe" ? wetten : solo).push(w);
+    if (modus !== "gruppe") weltEinreichen(w);
     schein = []; speichern(); renderAll(); toast(modus === "beide" ? "Gesetzt, zählt für beides" : modus === "gruppe" ? "In der Gruppe gesetzt" : "Gesetzt");
   };
   MODI.forEach(([m, t, max]) => { const b = h("button", "place", t); b.disabled = max < 1; b.onclick = () => setzen(m, max); knoepfe.push(b); reihe.append(b); });
@@ -775,6 +776,7 @@ function renderProfil() {
           }
         }
         await db.doc("members/" + me).remove();
+        await db.doc("welt/" + me).remove();
         await db.doc("players/" + me).remove();
       } catch (e) { del.disabled = false; del.textContent = "Konto löschen"; delete del.dataset.ok; await sync(); toast("Löschen hat nicht geklappt. Es wurde nichts gelöscht. Versuch es nochmals."); return; }
       try { await fb.deleteMe(); }
@@ -801,7 +803,7 @@ function renderProfil() {
   reset.onclick = async () => {
     if (!reset.dataset.ok) { reset.dataset.ok = "1"; reset.textContent = authUser ? "Wirklich? Dein Spielstand wird auf diesem Gerät und im Konto gelöscht. Nochmals tippen." : "Wirklich alles löschen? Nochmals tippen."; return; }
     if (authUser && db && me) {
-      try { await db.doc("members/" + me).remove(); await db.doc("players/" + me).remove(); }
+      try { await db.doc("members/" + me).remove(); await db.doc("welt/" + me).remove(); await db.doc("players/" + me).remove(); weltWetten = []; store.set("weltWetten", []); }
       catch { toast("Zurücksetzen hat online nicht geklappt. Es wurde nichts gelöscht."); delete reset.dataset.ok; reset.textContent = "Alles zurücksetzen"; return; }
     }
     profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; team = ""; schein = []; gruppe = null; mitglieder = [];
@@ -914,7 +916,7 @@ async function sync() {
 // Nach dem Abmelden: nichts vom Konto auf dem Gerät lassen
 function geraetLeeren() {
   profil = null; wetten = []; solo = []; gespielt = []; kaeufe = []; aktiv = { titel: null, farbe: null }; resetTs = 0; xpBank = 0; design = "zeitung"; team = ""; schein = []; gruppe = null; mitglieder = []; applyDesign();
-  ["xpBank", "design", "profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel", "einladung"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
+  ["xpBank", "design", "profil3", "wetten3", "solo", "gespielt", "kaeufe", "aktiv", "resetTs", "votes", "team", "schein", "konto_ziel", "einladung", "weltWetten"].forEach((k) => { try { localStorage.removeItem("tk_" + k); localStorage.removeItem(k); } catch {} });
   try { Object.keys(localStorage).filter((k) => k.includes("gruppe_")).forEach((k) => localStorage.removeItem(k)); } catch {}
   renderAll(); go("tipps"); openOnb(1);
 }
@@ -966,11 +968,11 @@ async function initDb() {
   db = fb.db;
   fb.onAuth(async (u) => {
     authUser = u; me = u ? u.uid : null;
-    if (!u) { unsubs.forEach((f) => { try { f(); } catch {} }); unsubs = []; mitglieder = []; renderAll(); return; }
+    if (!u) { unsubs.forEach((f) => { try { f(); } catch {} }); unsubs = []; mitglieder = []; weltLaden(); renderAll(); return; }
     let x = null; try { x = await db.doc("players/" + me).get(); } catch {}
     if (x && x.nick) { wiederherstellen(x); if (!gruppeNachLogin) $("#onb").hidden = true; toast("Spielstand geladen"); }
     else if (profil) { sync(); }
-    await gruppeLaden(); renderAll();
+    await gruppeLaden(); weltLaden(); renderAll();
   });
 }
 /* ================================================================
@@ -981,7 +983,7 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 function badge() { const c = $("#slipCount"); c.textContent = schein.length; c.hidden = !schein.length; }
 function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
-  ["tipps", "schein", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
+  ["tipps", "schein", "welt", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
   if (view === "schein") renderSchein();
   window.scrollTo(0, 0); // tabwechsel
   window.scrollTo({ top: 0 });
@@ -1294,7 +1296,7 @@ function renderShop() {
   box.append(h("p", "sub", "Alles im Shop kostet nur Spielgeld. Echtes Geld kann man in Tippkompass nie ausgeben. Das Tagesangebot wechselt um Mitternacht. Titel und Designs verdienst du dir über Stufen und Errungenschaften."));
 }
 
-function renderAll() { renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
+function renderAll() { renderWelt(); renderTipps(); renderSchein(); renderStatistik(); renderShop(); renderGruppe(); renderProfil(); badge(); }
 if (!profil) openOnb(1);
 renderAll();
 initDb();
@@ -1323,3 +1325,76 @@ initDb();
   }, 900);
 })();
 if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js"); } catch {} }
+
+/* ================= Weltrangliste der Woche ================= */
+// Wetten mit «Selber» oder «Beides» gehen als eigenes Dokument an die Datenbank (Zeit setzt der Server).
+// GitHub rechnet alle 30 Minuten nach und schreibt rangliste/woche und rang/{uid}. Die App liest nur.
+var weltDabei = false, weltListe = null, weltIch = null, weltWetten = [], weltAbos = [];
+function weltWoche() { return window.Pruefung ? Pruefung.wochenStart(Date.now()) : 0; }
+function weltLaden() {
+  weltAbos.forEach((u) => { try { u(); } catch {} }); weltAbos = [];
+  weltWetten = (store.get("weltWetten", []) || []).filter((w) => w.ts >= weltWoche());
+  weltDabei = false; weltIch = null; weltListe = null;
+  if (!db || !me) { renderWelt(); return; }
+  db.doc("welt/" + me).get().then((x) => { weltDabei = !!(x && x.dabei); renderWelt(); }).catch(() => {});
+  try { weltAbos.push(db.doc("rangliste/woche").onSnapshot((x) => { weltListe = x; renderWelt(); })); } catch {}
+  try { weltAbos.push(db.doc("rang/" + me).onSnapshot((x) => { weltIch = x; renderWelt(); })); } catch {}
+}
+function weltRest() {
+  // Wochen-Spielgeld übrig, aus den eigenen Welt-Wetten dieser Woche selbst berechnet
+  if (!window.Pruefung) return 0;
+  const r = Pruefung.pruefe({ wetten: weltWetten.map((w) => ({ ...w, uid: "ich" })), spiele: [...SPIELE, ...ARCHIV], start: weltWoche(), now: Date.now() });
+  return r.spieler.ich ? r.spieler.ich.stand : Pruefung.BUDGET;
+}
+async function weltEinreichen(w) {
+  if (!weltDabei || !db || !me || !fb || !fb.db.wette) return;
+  if (weltIch && weltIch.gesperrt) return;
+  const frei = weltRest();
+  if (w.einsatz > frei) { toast("Zählt nicht für die Weltrangliste: Wochen-Spielgeld (Fr. " + Math.floor(frei) + ") reicht nicht."); return; }
+  const picks = w.picks.map((p) => ({ g: p.g, k: p.k, q: p.q }));
+  try {
+    await fb.db.wette({ uid: me, einsatz: w.einsatz, picks });
+    weltWetten.push({ id: w.id, ts: Date.now(), einsatz: w.einsatz, picks }); store.set("weltWetten", weltWetten); renderWelt();
+  } catch (e) { console.warn(e); toast("Für die Weltrangliste konnte die Wette nicht gespeichert werden."); }
+}
+async function weltSchalten(an) {
+  if (!db || !me || !profil) return;
+  try { await db.doc("welt/" + me).set({ nick: profil.nick, dabei: an }); weltDabei = an; toast(an ? "Du machst bei der Weltrangliste mit" : "Du bist nicht mehr in der Weltrangliste"); }
+  catch { toast("Hat nicht geklappt. Versuch es nochmals."); }
+  renderWelt();
+}
+function renderWelt() {
+  const box = $("#weltBox"); if (!box) return; box.replaceChildren();
+  const c = h("div", "card");
+  c.append(h("p", "sub", "Alle Spieler weltweit, jede Woche neu ab Montag. Jeder hat dafür Fr. 1'000 Wochen-Spielgeld. Wetten mit «Selber» oder «Beides» zählen automatisch."));
+  if (!authUser) {
+    c.append(h("p", "welt-platz", "Melde dich an, um die Weltrangliste zu sehen und mitzumachen."));
+    const b = h("button", "btn", "Anmelden"); b.onclick = () => openOnb(0); c.append(b); box.append(c); return;
+  }
+  if (weltIch && weltIch.gesperrt) {
+    const sp = h("div", "welt-sperre");
+    sp.append(h("b", null, "Du bist von der Weltrangliste ausgeschlossen."), h("p", null, "Bei deinen Wetten wurden Unstimmigkeiten gefunden" + (weltIch.grund ? ": " + weltIch.grund : "") + ". Alles andere in der App kannst du weiter nutzen."), h("p", "sub", "Ist das ein Fehler? Melde dich über die Kontaktadresse auf der Datenschutzseite."));
+    c.append(sp);
+  } else if (!weltDabei) {
+    c.append(h("p", "welt-platz", "Mach mit und schau, auf welchem Platz du weltweit stehst."));
+    const b = h("button", "btn", "Bei der Weltrangliste mitmachen"); b.onclick = () => weltSchalten(true); c.append(b);
+    c.append(h("p", "sub", "Sichtbar ist nur dein Spitzname «" + (profil?.nick || "") + "». Du kannst jederzeit wieder austreten."));
+  } else if (weltIch && weltIch.woche === weltWoche() && weltIch.platz) {
+    const p = h("p", "welt-platz"); p.append("Du bist auf Platz ", h("b", null, String(weltIch.platz)), " von " + weltIch.von);
+    c.append(p, h("p", "sub", "Diese Woche: " + (weltIch.gewinn >= 0 ? "+" : "−") + fr(Math.abs(weltIch.gewinn)) + " · Wochen-Spielgeld übrig " + fr(weltRest()) + (weltIch.offen ? " · " + weltIch.offen + " offen" : "")));
+  } else {
+    c.append(h("p", "welt-platz", weltWetten.length ? "Deine Wetten werden geprüft. Dein Platz erscheint in spätestens 30 Minuten." : "Setz eine Wette mit «Selber» oder «Beides», dann erscheinst du hier."));
+    if (weltWetten.length) c.append(h("p", "sub", "Wochen-Spielgeld übrig " + fr(weltRest())));
+  }
+  const aktuell = weltListe && weltListe.start === weltWoche();
+  if (aktuell && weltListe.top && weltListe.top.length) {
+    const ol = h("ol", "welt-top");
+    weltListe.top.slice(0, 10).forEach((z) => { const ich = weltIch && weltIch.platz === z.platz && !weltIch.gesperrt; const li = h("li", ich ? "ich" : ""); li.append(h("span", "pl", String(z.platz)), h("span", null, z.nick), h("span", "gw", (z.gewinn >= 0 ? "+" : "−") + fr(Math.abs(z.gewinn)))); ol.append(li); });
+    c.append(ol);
+    const st = new Date(weltListe.stand);
+    c.append(h("p", "sub", weltListe.anzahl + " Spieler · geprüft um " + st.toLocaleTimeString("de-CH", { hour: "2-digit", minute: "2-digit" }) + " Uhr · " + weltListe.gesperrt + " gesperrt"));
+  } else c.append(h("p", "sub", "Diese Woche hat noch niemand eine geprüfte Wette. Sei der Erste!"));
+  c.append(h("p", "sub", "Jede Wette wird auf einem Server nachgerechnet: echte Resultate, echte Quoten, Anpfiffzeit. Wer schummelt, wird ausgeschlossen."));
+  if (weltDabei && !(weltIch && weltIch.gesperrt)) { const aus = h("button", "btn ghost", "Aus der Weltrangliste austreten"); aus.onclick = () => weltSchalten(false); c.append(aus); }
+  box.append(c);
+}

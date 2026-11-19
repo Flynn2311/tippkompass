@@ -37,8 +37,12 @@ export async function lauf(db, { now = Date.now(), spiele, log = console.log } =
       gesperrt, grund: gesperrt ? (s.verstoesse[0]?.grund || "Frühere Unstimmigkeiten") : null,
     });
   }
+  // Aufräumen: Wetten älter als 2 Wochen braucht niemand mehr (Datensparsamkeit)
+  const alt = await db.collection("bets").where("ts", "<", new Date(start - 7 * 864e5)).limit(300).get();
+  alt.docs.forEach((d) => { b.delete(d.ref); if (++n === 450) { batches.push(b); b = db.batch(); n = 0; } });
   batches.push(b);
   for (const x of batches) await x.commit();
+  if (alt.docs.length) log(`Aufgeräumt: ${alt.docs.length} alte Wetten gelöscht`);
   log(`Weltrangliste: ${rang.liste.length} Spieler, ${rang.gesperrt.length} gesperrt, ${nurDabei.length} Wetten geprüft`);
   return { rang, res };
 }

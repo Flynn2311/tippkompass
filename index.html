@@ -627,6 +627,19 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
 .vit-med.bronze { --m: #A9713C; --mlt: #F4E6D8; } .vit-med.silber { --m: #8E949B; --mlt: #EDEFF1; } .vit-med.gold { --m: #C98A1B; --mlt: #FBF0D9; }
 [data-design="dunkel"] .vit-med, [data-design="neon"] .vit-med, [data-design="sonne"] .vit-med { --mlt: #24272E; }
 .vit-brett { height: 7px; background: #8A5A33; border-radius: 2px; margin: .45rem 0 0; }
+.welt-top { list-style: none; margin: .5rem 0 0; padding: 0; }
+.welt-top li { display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: center; gap: .4rem; padding: .45rem .2rem; border-bottom: 1px solid var(--line); font-size: .95rem; }
+.welt-top li.ich { background: var(--rasen-lt); font-weight: 700; }
+.welt-top .pl { font-family: var(--serif); font-size: 1.1rem; color: var(--soft); text-align: center; }
+.welt-top li:nth-child(1) .pl { color: #C98A1B; } .welt-top li:nth-child(2) .pl { color: #8E949B; } .welt-top li:nth-child(3) .pl { color: #A9713C; }
+.welt-top .gw { font-weight: 700; }
+.welt-platz { font-size: 1.05rem; margin: .4rem 0 .2rem; }
+.welt-platz b { font-family: var(--serif); font-size: 1.6rem; }
+.welt-sperre { border: 2px solid var(--rot); background: var(--rot-lt); border-radius: 6px; padding: .8rem; margin-top: .4rem; }
+.welt-sperre b { color: var(--rot); }
+.welt-schalter { display: flex; align-items: center; justify-content: space-between; gap: .6rem; margin-top: .6rem; }
+.welt-test { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .8rem; padding-top: .6rem; border-top: 1px dashed var(--line); }
+.welt-test button { font-size: .8rem; }
 </style>
 <meta name="description" content="Sporttipps für Super League, Premier League, Bundesliga, Champions League und Tennis: Quoten, Kombis und Tipprunden mit Kollegen. Mit Spielgeld, gratis und ohne Werbung.">
 
@@ -722,6 +735,10 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
 
 
 
+  <section class="view" id="v-welt" hidden>
+    <h2>Weltrangliste</h2>
+    <div id="weltBox"></div>
+  </section>
   <section class="view" id="v-gruppe" hidden>
     <h2>Gruppe</h2>
     <div id="gruppeBox"></div>
@@ -815,12 +832,14 @@ h3.turnier { font-size: .85rem; text-transform: uppercase; letter-spacing: .04em
   <nav role="tablist" aria-label="Bereiche">
     <button role="tab" aria-selected="true" data-view="tipps"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7l1.8 3.7 4 .6-2.9 2.8.7 4L12 16.2 8.4 18l.7-4L6.2 11.3l4-.6z"/></svg>Tipps</button>
     <button role="tab" aria-selected="false" data-view="schein"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>Tippschein<span class="badge" id="slipCount" hidden>0</span></button>
+    <button role="tab" aria-selected="false" data-view="welt"><svg viewBox="0 0 24 24"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M8.5 20h7M10 17h4v3h-4z"/></svg>Weltrangliste</button>
     <button role="tab" aria-selected="false" data-view="gruppe"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5M15 14.5c2.8-.3 5 1.4 6 4.5"/></svg>Gruppe</button>
     <button role="tab" aria-selected="false" data-view="profil"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profil</button>
 
   </nav>
 </div>
 <script type="module" src="firebase.js"></script>
+<script src="scripts/pruefung.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
