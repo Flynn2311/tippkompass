@@ -728,7 +728,7 @@ function renderGruppe() {
       const geheim = (w) => !m.ich && !spionAktiv(m.id) && w.picks.some((p) => { const g = spiel(p.g); return g && offen(g); });
       let versteckt = 0;
       (m.wetten || []).slice().sort((a, b) => b.ts - a.ts).forEach((w) => { if (geheim(w)) versteckt++; else d.append(wettKarte(w)); });
-      if (versteckt) d.append(h("div", "sub geheim", versteckt + (versteckt === 1 ? " Tipp ist" : " Tipps sind") + " noch geheim und sichtbar ab Anpfiff. Mit dem Spion aus dem Shop siehst du sie früher."));
+      if (versteckt) d.append(h("div", "sub geheim", versteckt + (versteckt === 1 ? " Tipp ist" : " Tipps sind") + " noch geheim und sichtbar ab Anpfiff."));
       if (!m.ich && spionAktiv(m.id)) d.prepend(h("div", "sub geheim", "Spion aktiv: du siehst die offenen Tipps."));
       if (!(m.wetten || []).length) d.append(h("div", "sub", "Noch keine Wetten."));
       li.append(d);
@@ -981,7 +981,7 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 function badge() { const c = $("#slipCount"); c.textContent = schein.length; c.hidden = !schein.length; }
 function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
-  ["tipps", "schein", "shop", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
+  ["tipps", "schein", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
   if (view === "schein") renderSchein();
   window.scrollTo(0, 0); // tabwechsel
   window.scrollTo({ top: 0 });
