@@ -982,7 +982,7 @@ function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.ad
 function badge() { const c = $("#slipCount"); c.textContent = schein.length; c.hidden = !schein.length; }
 function go(view) {
   document.querySelectorAll(".tabs button").forEach((x) => x.setAttribute("aria-selected", String(x.dataset.view === view)));
-  ["tipps", "schein", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
+  ["tipps", "schein", "welt", "gruppe", "profil"].forEach((v) => { $("#v-" + v).hidden = v !== view; });
   if (view === "schein") renderSchein();
   window.scrollTo(0, 0); // tabwechsel
   window.scrollTo({ top: 0 });
@@ -1383,7 +1383,7 @@ function weltEinreichen(w) {
 function renderWelt() {
   const box = $("#weltBox"); if (!box) return; box.replaceChildren();
   const c = h("div", "card");
-  c.append(h("p", "sub", "Alle Spieler weltweit, jede Woche neu ab Montag. Jeder hat dafür Fr. 1'000 Wochen-Spielgeld. Wetten mit «Selber» oder «Beides» zählen automatisch."));
+  c.append(h("p", "sub", "Diese Woche · alle Spieler weltweit, jede Woche neu ab Montag. Jeder hat dafür Fr. 1'000 Wochen-Spielgeld. Wetten mit «Selber» oder «Beides» zählen automatisch."));
   const a = weltAuswertung();
   if (!a) { c.append(h("p", "sub", "Rangliste wird geladen …")); box.append(c); return; }
   const ich = weltDabei ? a.ich : null;
