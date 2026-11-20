@@ -1,19 +1,6 @@
 {
- "STAND": "2026-11-20T02:59:00+01:00",
+ "STAND": "2026-11-20T03:50:00+01:00",
  "SPIELE": [
-  {
-   "id": "n10",
-   "sport": "hockey",
-   "liga": "NHL",
-   "zeit": "2026-11-13T02:00:00Z",
-   "h": "Utah Mammoth",
-   "a": "St. Louis Blues",
-   "p": {
-    "h": 52,
-    "a": 48
-   },
-   "res": "a"
-  },
   {
    "id": "b1",
    "sport": "fussball",
@@ -1513,6 +1500,19 @@
     "a": 58.3
    },
    "res": "h"
+  },
+  {
+   "id": "n10",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-13T02:00:00Z",
+   "h": "Utah Mammoth",
+   "a": "St. Louis Blues",
+   "p": {
+    "h": 52,
+    "a": 48
+   },
+   "res": "a"
   }
  ]
 }
