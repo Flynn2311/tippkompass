@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-20T18:24:00+01:00",
+ "STAND": "2026-11-20T20:30:00+01:00",
  "SPIELE": [
   {
    "id": "b1",
@@ -873,11 +873,6 @@
  ],
  "TOPS": [
   {
-   "id": "b1",
-   "wahl": "h",
-   "text": "Bayern hat zuletzt in Mainz 2:1 gewonnen, Köln verlor zuhause 1:2 gegen Leverkusen. Der sicherste Tipp im Fussball-Angebot."
-  },
-  {
    "id": "c8",
    "wahl": "h",
    "text": "Real gewann zuletzt in Athen 3:2, PSV verlor in der Champions League zuhause gegen Brügge."
@@ -901,6 +896,11 @@
    "id": "c9",
    "wahl": "a",
    "text": "Betis ist in Bratislava klarer Favorit. Slovan gewinnt laut Daten nur etwa jedes zehnte solche Spiel."
+  },
+  {
+   "id": "o3b025a029f",
+   "wahl": "a",
+   "text": "Bayern München hat 1 der letzten 1 Spiele gewonnen, Hamburger SV nur 1 von 2. Ich setze trotzdem auf den Auswärtssieg."
   }
  ],
  "RESULTATE": [
