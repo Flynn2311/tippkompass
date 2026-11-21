@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-20T22:39:00+01:00",
+ "STAND": "2026-11-21T03:02:00+01:00",
  "SPIELE": [
   {
    "id": "b1",
@@ -378,19 +378,6 @@
     "u": 7.5,
     "a": 87.8
    }
-  },
-  {
-   "id": "n11",
-   "sport": "hockey",
-   "liga": "NHL",
-   "zeit": "2026-11-14T02:00:00Z",
-   "h": "Vancouver Canucks",
-   "a": "New York Rangers",
-   "p": {
-    "h": 34.2,
-    "a": 65.8
-   },
-   "res": "a"
   },
   {
    "id": "n12",
@@ -1533,6 +1520,19 @@
    "p": {
     "h": 52,
     "a": 48
+   },
+   "res": "a"
+  },
+  {
+   "id": "n11",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-14T02:00:00Z",
+   "h": "Vancouver Canucks",
+   "a": "New York Rangers",
+   "p": {
+    "h": 34.2,
+    "a": 65.8
    },
    "res": "a"
   }
