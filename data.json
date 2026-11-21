@@ -1,5 +1,5 @@
 {
- "STAND": "2026-11-21T03:02:00+01:00",
+ "STAND": "2026-11-21T04:14:00+01:00",
  "SPIELE": [
   {
    "id": "b1",
@@ -378,19 +378,6 @@
     "u": 7.5,
     "a": 87.8
    }
-  },
-  {
-   "id": "n12",
-   "sport": "hockey",
-   "liga": "NHL",
-   "zeit": "2026-11-14T03:00:00Z",
-   "h": "Vegas Golden Knights",
-   "a": "Nashville Predators",
-   "p": {
-    "h": 61.8,
-    "a": 38.2
-   },
-   "res": "a"
   },
   {
    "id": "b10",
@@ -1533,6 +1520,19 @@
    "p": {
     "h": 34.2,
     "a": 65.8
+   },
+   "res": "a"
+  },
+  {
+   "id": "n12",
+   "sport": "hockey",
+   "liga": "NHL",
+   "zeit": "2026-11-14T03:00:00Z",
+   "h": "Vegas Golden Knights",
+   "a": "Nashville Predators",
+   "p": {
+    "h": 61.8,
+    "a": 38.2
    },
    "res": "a"
   }
